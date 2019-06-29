@@ -10,19 +10,29 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Majora',
-      theme: ThemeData(primarySwatch: Colors.blueGrey),
-      home: MyHomePage(),
+      home: new ChatPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class ChatPage extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _ChatPageState createState() => _ChatPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class SecondScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext ctxt) {
+    return new Scaffold(
+      appBar: new AppBar(
+        title: new Text("Auth"),
+      ),
+      body: new Text("TODO: second page"),
+    );
+  }
+}
+
+class _ChatPageState extends State<ChatPage> {
   WebSocketChannel channel;
   TextEditingController controller;
   List<Message> list = [];
@@ -53,7 +63,6 @@ class _MyHomePageState extends State<MyHomePage> {
       var m = new Message.fromJson(json.decode(content));
       setState(() => list.add(m));
     }
-    return null;
   }
 
   @override
@@ -64,23 +73,36 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    //Timer(Duration(milliseconds: 1000), () => _controller.jumpTo(_controller.position.maxScrollExtent));
     return Scaffold(
       body: Container(
-        padding: EdgeInsets.all(20.0),
+        decoration: new BoxDecoration(color: Colors.black),
+        padding: EdgeInsets.all(5.0),
         child: ListView(
           children: <Widget>[
-            MessageList(
-                list), //list.map((data) => Text(data.nick+" : "+data.data)).toList(),
+            Form(
+              child: new TextFormField(
+                decoration: new InputDecoration(
+                  labelText: "Write something {user} ...",
+                  fillColor: Colors.grey[900],
+                  filled: true,
+                ),
+                controller: controller,
+              ),
+            ),
+            MessageList(list),
           ],
         ),
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   child: Icon(Icons.send),
-      //   onPressed: () {
-      //     sendData();
-      //   },
-      // ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.perm_identity),
+        onPressed: () {
+          //sendData();
+          Navigator.push(
+            context,
+            new MaterialPageRoute(builder: (ctxt) => new SecondScreen()),
+          );
+        },
+      ),
     );
   }
 }
@@ -96,11 +118,11 @@ class MessageList extends StatelessWidget {
     return ListView.builder(
       shrinkWrap: true,
       reverse: true,
-      padding: EdgeInsets.symmetric(vertical: 8.0),
       controller: _controller,
       itemCount: _messages.length,
       itemBuilder: (BuildContext ctx, int index) {
         return Card(
+          color: Colors.grey[900],
           child: _MessageListItem(_messages[index]),
         );
       },
@@ -111,10 +133,16 @@ class MessageList extends StatelessWidget {
 class _MessageListItem extends ListTile {
   _MessageListItem(Message msg)
       : super(
-          dense: true,
-          title: Text(msg.data),
-          subtitle: Text(msg.nick),
-        );
+            dense: true,
+            title: Text(msg.data,
+                style: TextStyle(
+                  color: Colors.grey[400],
+                )),
+            subtitle: Text(msg.nick,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                )),
+            onTap: () {});
 }
 
 class Message {
