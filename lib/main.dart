@@ -8,6 +8,9 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 void main() => runApp(App());
 
 User kUser = new User();
+final String kAppTitle = "Strims";
+final String kLogoPath = "assets/ComfyApe.png";
+final String kAddress = "wss://chat.strims.gg/ws";
 
 class App extends StatelessWidget {
   @override
@@ -24,7 +27,18 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return new Scaffold(
         appBar: new AppBar(
-          title: new Text("Strims"),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                kLogoPath,
+                fit: BoxFit.contain,
+                height: 24,
+              ),
+              Container(
+                  padding: const EdgeInsets.all(8.0), child: Text('Strims'))
+            ],
+          ),
         ),
         body: Container(
           child: new Column(
@@ -91,8 +105,17 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Strims"),
+      appBar: new AppBar(
+        title: Row(
+          children: [
+            Image.asset(
+              kLogoPath,
+              fit: BoxFit.contain,
+              height: 24,
+            ),
+            Container(padding: const EdgeInsets.all(8.0), child: Text('Strims'))
+          ],
+        ),
       ),
       body: Container(
         child: Column(
@@ -139,21 +162,21 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                kUser.nick,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                kUser.jwt,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            )
+            // Padding(
+            //   padding: const EdgeInsets.all(16.0),
+            //   child: Text(
+            //     kUser.nick,
+            //     textAlign: TextAlign.center,
+            //   ),
+            // ),
+            // Padding(
+            //   padding: const EdgeInsets.all(16.0),
+            //   child: Text(
+            //     kUser.jwt,
+            //     overflow: TextOverflow.ellipsis,
+            //     textAlign: TextAlign.center,
+            //   ),
+            // )
           ],
         ),
       ),
@@ -170,12 +193,14 @@ class _ChatPageState extends State<ChatPage> {
   WebSocketChannel channel;
   TextEditingController controller;
   List<Message> list = [];
+  //List<Widget> output;
 
+  
   @override
   void initState() {
     super.initState();
     String jwt = kUser.jwt;
-    channel = IOWebSocketChannel.connect('wss://chat.strims.gg/ws',
+    channel = IOWebSocketChannel.connect(kAddress,
         headers: jwt?.isNotEmpty == true ? {'Cookie': 'jwt=$jwt'} : {});
     controller = TextEditingController();
     channel.stream.listen((onData) {
@@ -198,6 +223,12 @@ class _ChatPageState extends State<ChatPage> {
     String content = msg.split(new RegExp(r"^[^ ]*"))[1];
     Message m = new Message.fromJson(rec.trim(), json.decode(content));
     if (m.type == "MSG") {
+      var x = m.data.split(" ");
+      for (int i = 0; i < x.length; i++) {
+        print(x[i]);
+        // use TextSpan maybe
+        //output.add(Text(x[i]));
+      }
       setState(() => list.add(m));
     }
   }
@@ -219,7 +250,16 @@ class _ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       appBar: new AppBar(
-        title: new Text("Strims"),
+        title: Row(
+          children: [
+            Image.asset(
+              kLogoPath,
+              fit: BoxFit.contain,
+              height: 24,
+            ),
+            Container(padding: const EdgeInsets.all(8.0), child: Text('Strims'))
+          ],
+        ),
       ),
       body: Container(
         decoration: new BoxDecoration(color: Colors.black),
