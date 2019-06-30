@@ -36,11 +36,14 @@ class _ChatPageState extends State<ChatPage> {
   WebSocketChannel channel;
   TextEditingController controller;
   List<Message> list = [];
+  String authToken;
 
   @override
   void initState() {
     super.initState();
-    channel = IOWebSocketChannel.connect('wss://chat.strims.gg/ws');
+    channel = IOWebSocketChannel.connect('wss://chat.strims.gg/ws',
+        headers:
+            authToken?.isNotEmpty == true ? {'Cookie': 'jwt=$authToken'} : {});
     controller = TextEditingController();
     channel.stream.listen((onData) {
       handleReceive(onData);
@@ -51,7 +54,8 @@ class _ChatPageState extends State<ChatPage> {
 
   void sendData() {
     if (controller.text.isNotEmpty) {
-      channel.sink.add(controller.text);
+      channel.sink
+          .add('MSG {"nick":"majora","data":"' + controller.text + '"}');
       controller.text = "";
     }
   }
@@ -94,13 +98,13 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.perm_identity),
+        child: Icon(Icons.send),
         onPressed: () {
-          //sendData();
-          Navigator.push(
-            context,
-            new MaterialPageRoute(builder: (ctxt) => new SecondScreen()),
-          );
+          sendData();
+          // Navigator.push(
+          //   context,
+          //   new MaterialPageRoute(builder: (ctxt) => new SecondScreen()),
+          // );
         },
       ),
     );
