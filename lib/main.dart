@@ -11,6 +11,19 @@ User kUser = new User();
 final String kAppTitle = "Strims";
 final String kLogoPath = "assets/ComfyApe.png";
 final String kAddress = "wss://chat.strims.gg/ws";
+final AppBar kAppBar = new AppBar(
+  title: Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Image.asset(
+        kLogoPath,
+        fit: BoxFit.contain,
+        height: 24,
+      ),
+      Container(padding: const EdgeInsets.all(8.0), child: Text('Strims'))
+    ],
+  ),
+);
 
 class App extends StatelessWidget {
   @override
@@ -26,20 +39,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-        appBar: new AppBar(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                kLogoPath,
-                fit: BoxFit.contain,
-                height: 24,
-              ),
-              Container(
-                  padding: const EdgeInsets.all(8.0), child: Text('Strims'))
-            ],
-          ),
-        ),
+        appBar: kAppBar,
         body: Container(
           child: new Column(
             children: <Widget>[
@@ -105,18 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: new AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              kLogoPath,
-              fit: BoxFit.contain,
-              height: 24,
-            ),
-            Container(padding: const EdgeInsets.all(8.0), child: Text('Strims'))
-          ],
-        ),
-      ),
+      appBar: kAppBar,
       body: Container(
         child: Column(
           children: <Widget>[
@@ -195,7 +184,6 @@ class _ChatPageState extends State<ChatPage> {
   List<Message> list = [];
   //List<Widget> output;
 
-  
   @override
   void initState() {
     super.initState();
@@ -212,8 +200,7 @@ class _ChatPageState extends State<ChatPage> {
 
   void sendData() {
     if (controller.text.isNotEmpty) {
-      channel.sink
-          .add('MSG {"nick":"majora","data":"' + controller.text + '"}');
+      channel.sink.add('MSG {"data":"' + controller.text + '"}');
       controller.text = "";
     }
   }
@@ -249,18 +236,7 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     return Scaffold(
-      appBar: new AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              kLogoPath,
-              fit: BoxFit.contain,
-              height: 24,
-            ),
-            Container(padding: const EdgeInsets.all(8.0), child: Text('Strims'))
-          ],
-        ),
-      ),
+      appBar: kAppBar,
       body: Container(
         decoration: new BoxDecoration(color: Colors.black),
         padding: EdgeInsets.all(5.0),
