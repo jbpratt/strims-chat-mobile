@@ -151,21 +151,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
             ),
-            // Padding(
-            //   padding: const EdgeInsets.all(16.0),
-            //   child: Text(
-            //     kUser.nick,
-            //     textAlign: TextAlign.center,
-            //   ),
-            // ),
-            // Padding(
-            //   padding: const EdgeInsets.all(16.0),
-            //   child: Text(
-            //     kUser.jwt,
-            //     overflow: TextOverflow.ellipsis,
-            //     textAlign: TextAlign.center,
-            //   ),
-            // )
           ],
         ),
       ),
@@ -210,12 +195,12 @@ class _ChatPageState extends State<ChatPage> {
     String content = msg.split(new RegExp(r"^[^ ]*"))[1];
     Message m = new Message.fromJson(rec.trim(), json.decode(content));
     if (m.type == "MSG") {
-      var x = m.data.split(" ");
-      for (int i = 0; i < x.length; i++) {
-        print(x[i]);
-        // use TextSpan maybe
-        //output.add(Text(x[i]));
-      }
+      // var x = m.data.split(" ");
+      // for (int i = 0; i < x.length; i++) {
+      //   print(x[i]);
+      //   // use TextSpan maybe
+      //   //output.add(Text(x[i]));
+      // }
       setState(() => list.add(m));
     }
   }
@@ -237,25 +222,23 @@ class _ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       appBar: kAppBar,
-      body: Container(
-        decoration: new BoxDecoration(color: Colors.black),
-        padding: EdgeInsets.all(5.0),
-        child: ListView(
-          children: <Widget>[
-            Form(
-              child: new TextFormField(
-                decoration: new InputDecoration(
-                  labelText: label,
-                  fillColor: Colors.grey[900],
-                  filled: true,
-                ),
-                controller: controller,
+      body: Column(children: <Widget>[
+        Container(
+          child: Form(
+            child: new TextFormField(
+              decoration: new InputDecoration(
+                labelText: label,
+                fillColor: Colors.grey[900],
+                filled: true,
               ),
+              controller: controller,
             ),
-            MessageList(list),
-          ],
+          ),
         ),
-      ),
+        Expanded(
+          child: ListView(children: <Widget>[MessageList(list)]),
+        )
+      ]),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.send),
         onPressed: () {
