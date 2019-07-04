@@ -1,10 +1,63 @@
-import 'dart:convert';
-
+import 'dart:convert' as convert;
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/widgets.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:flutter_inappbrowser/flutter_inappbrowser.dart';
 
+class MyInAppBrowser extends InAppBrowser {
+  List<Cookie> cookies;
+  @override
+  void onBrowserCreated() async {
+    print("\n\nBrowser Ready!\n\n");
+  }
+
+  @override
+  onLoadStart(String url) async {}
+
+  @override
+  Future onLoadStop(String url) async {
+    var x = (await CookieManager.getCookie("https://chat.strims.gg", "jwt"));
+    kUser.jwt = x['value'];
+    print(kUser.jwt);
+  }
+
+  @override
+  void onLoadError(String url, int code, String message) {
+    print("\n\nCan't load $url.. Error: $message\n\n");
+  }
+
+  @override
+  Future onExit() async {
+    var header = new Map<String, String>();
+    header['Cookie'] = 'jwt=${kUser.jwt}';
+    var response =
+        await http.get("https://strims.gg/api/profile", headers: header);
+    if (response.statusCode == 200) {
+      var jsonResponse = convert.jsonDecode(response.body);
+      kUser.nick = jsonResponse['username'];
+    } else {
+      print("Request failed with status: ${response.statusCode}.");
+    }
+    print("\n\nBrowser closed!\n\n");
+  }
+
+  @override
+  void shouldOverrideUrlLoading(String url) {
+    this.webViewController.loadUrl(url);
+  }
+
+  @override
+  void onLoadResource(
+      WebResourceResponse response, WebResourceRequest request) {}
+
+  @override
+  void onConsoleMessage(ConsoleMessage consoleMessage) {}
+}
+
+MyInAppBrowser inAppBrowser = new MyInAppBrowser();
 void main() => runApp(App());
 
 User kUser = new User();
@@ -30,130 +83,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData.dark(),
-      home: new HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return new Scaffold(
-        appBar: kAppBar,
-        body: Container(
-          child: new Column(
-            children: <Widget>[
-              Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: RaisedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        new MaterialPageRoute(
-                            builder: (ctxt) => new ChatPage()),
-                      );
-                    },
-                    child: const Text('chat', style: TextStyle(fontSize: 10)),
-                  )),
-              Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: RaisedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        new MaterialPageRoute(
-                            builder: (ctxt) => new ProfilePage()),
-                      );
-                    },
-                    child:
-                        const Text('profile', style: TextStyle(fontSize: 10)),
-                  )),
-            ],
-          ),
-        ));
-  }
-}
-
-class ProfilePage extends StatefulWidget {
-  @override
-  _ProfilePageState createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends State<ProfilePage> {
-  TextEditingController nickController = TextEditingController();
-  TextEditingController jwtController = TextEditingController();
-
-  saveData() {
-    if (nickController.text.isNotEmpty && jwtController.text.isNotEmpty) {
-      kUser.nick = nickController.text;
-      nickController.text = "";
-      kUser.jwt = jwtController.text;
-      jwtController.text = "";
-      Navigator.of(context).pop(ProfilePage);
-    }
-  }
-
-  resetData() {
-    if (kUser.nick.isNotEmpty) {
-      kUser.nick = "";
-    }
-    if (kUser.jwt.isNotEmpty) {
-      kUser.jwt = "";
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: kAppBar,
-      body: Container(
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: nickController,
-                decoration: InputDecoration(
-                  labelText: 'Enter your username',
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: jwtController,
-                decoration: InputDecoration(
-                  labelText: 'Enter your jwt',
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Builder(
-                builder: (context) {
-                  return RaisedButton(
-                    onPressed: () => saveData(),
-                    color: Colors.indigoAccent,
-                    child: Text('save'),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Builder(
-                builder: (context) {
-                  return RaisedButton(
-                    onPressed: () => resetData(),
-                    color: Colors.indigoAccent,
-                    child: Text('reset'),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+      home: new ChatPage(),
     );
   }
 }
@@ -176,14 +106,50 @@ class _ChatPageState extends State<ChatPage> {
     channel = IOWebSocketChannel.connect(kAddress,
         headers: jwt?.isNotEmpty == true ? {'Cookie': 'jwt=$jwt'} : {});
     controller = TextEditingController();
+
     channel.stream.listen((onData) {
-      handleReceive(onData);
+      if (onData is String) {
+        handleReceive(onData);
+      }
     }, onError: (error) {
       print(error.toString());
     });
   }
 
+  Future _showDialog() async {
+    await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: new Text("Whoops!"),
+            content: new Text("You must first sign in to chat"),
+            actions: <Widget>[
+              new FlatButton(
+                child: new Text("Sign in"),
+                onPressed: () async {
+                  await inAppBrowser
+                      .open(url: "https://strims.gg/login", options: {
+                    "useShouldOverrideUrlLoading": true,
+                  });
+                },
+              ),
+              new FlatButton(
+                child: new Text("Close"),
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {});
+                },
+              )
+            ],
+          );
+        });
+  }
+
   void sendData() {
+    if (kUser.jwt == null) {
+      _showDialog();
+    }
+
     if (controller.text.isNotEmpty) {
       channel.sink.add('MSG {"data":"' + controller.text + '"}');
       controller.text = "";
@@ -191,17 +157,23 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void handleReceive(String msg) {
-    String rec = msg.split(new RegExp(r"{[^}]*}"))[0];
-    String content = msg.split(new RegExp(r"^[^ ]*"))[1];
-    Message m = new Message.fromJson(rec.trim(), json.decode(content));
-    if (m.type == "MSG") {
-      // var x = m.data.split(" ");
-      // for (int i = 0; i < x.length; i++) {
-      //   print(x[i]);
-      //   // use TextSpan maybe
-      //   //output.add(Text(x[i]));
-      // }
-      setState(() => list.add(m));
+    if (msg == 'ERR "needlogin"') {
+      print(msg);
+      return;
+    } else {
+      String rec = msg.split(new RegExp(r"{[^}]*}"))[0];
+      String content = msg.split(new RegExp(r"^[^ ]*"))[1];
+      Message m =
+          new Message.fromJson(rec.trim(), convert.json.decode(content));
+      if (m.type == "MSG") {
+        // var x = m.data.split(" ");
+        // for (int i = 0; i < x.length; i++) {
+        //   print(x[i]);
+        //   // use TextSpan maybe
+        //   //output.add(Text(x[i]));
+        // }
+        setState(() => list.add(m));
+      }
     }
   }
 
@@ -217,7 +189,7 @@ class _ChatPageState extends State<ChatPage> {
     if (kUser.nick == null || kUser.nick.isEmpty) {
       label = "You need to be signed in to chat";
     } else {
-      label = 'Write something ${kUser.nick}';
+      label = 'Write something ${kUser.nick} ...';
     }
 
     return Scaffold(
