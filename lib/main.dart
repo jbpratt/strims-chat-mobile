@@ -83,7 +83,11 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.dark(),
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: Colors.grey[900],
+        accentColor: Colors.orange[500],
+      ),
       home: new ChatPage(),
     );
   }
@@ -374,7 +378,8 @@ Map<String, Emote> kEmotes = {
   "INFESTOR": new Emote(path: "/assets/INFESTOR.png", name: "INFESTOR"),
   "FIDGETLOL": new Emote(path: "/assets/FIDGETLOL.png", name: "FIDGETLOL"),
   "Hhhehhehe": new Emote(path: "/assets/Hhhehhehe.png", name: "Hhhehhehe"),
-  "GameOfThrows": new Emote(path: "/assets/GameOfThrows.png", name: "GameOfThrows"),
+  "GameOfThrows":
+      new Emote(path: "/assets/GameOfThrows.png", name: "GameOfThrows"),
   "Abathur": new Emote(path: "/assets/Abathur.png", name: "Abathur"),
   "LUL": new Emote(path: "/assets/LUL.png", name: "LUL"),
   "SURPRISE": new Emote(path: "/assets/SURPRISE.png", name: "SURPRISE"),
@@ -390,7 +395,8 @@ Map<String, Emote> kEmotes = {
   "OhKrappa": new Emote(path: "/assets/OhKrappa.png", name: "OhKrappa"),
   "SoDoge": new Emote(path: "/assets/SoDoge.png", name: "SoDoge"),
   "WhoahDude": new Emote(path: "/assets/WhoahDude.png", name: "WhoahDude"),
-  "MotherFuckinGame": new Emote(path: "/assets/MotherFuckinGame.png", name: "MotherFuckinGame"),
+  "MotherFuckinGame":
+      new Emote(path: "/assets/MotherFuckinGame.png", name: "MotherFuckinGame"),
   "DaFeels": new Emote(path: "/assets/DaFeels.png", name: "DaFeels"),
   "UWOTM8": new Emote(path: "/assets/UWOTM8.png", name: "UWOTM8"),
   "DatGeoff": new Emote(path: "/assets/DatGeoff.png", name: "DatGeoff"),
@@ -415,9 +421,12 @@ Map<String, Emote> kEmotes = {
   "BERN": new Emote(path: "/assets/BERN.png", name: "BERN"),
   "Hmmm": new Emote(path: "/assets/Hmmm.png", name: "Hmmm"),
   "PepoThink": new Emote(path: "/assets/PepoThink.png", name: "PepoThink"),
-  "FeelsAmazingMan": new Emote(path: "/assets/FeelsAmazingMan.png", name: "FeelsAmazingMan"),
-  "FeelsBadMan": new Emote(path: "/assets/FeelsBadMan.png", name: "FeelsBadMan"),
-  "FeelsGoodMan": new Emote(path: "/assets/FeelsGoodMan.png", name: "FeelsGoodMan"),
+  "FeelsAmazingMan":
+      new Emote(path: "/assets/FeelsAmazingMan.png", name: "FeelsAmazingMan"),
+  "FeelsBadMan":
+      new Emote(path: "/assets/FeelsBadMan.png", name: "FeelsBadMan"),
+  "FeelsGoodMan":
+      new Emote(path: "/assets/FeelsGoodMan.png", name: "FeelsGoodMan"),
   "OhMyDog": new Emote(path: "/assets/OhMyDog.png", name: "OhMyDog"),
   "Wowee": new Emote(path: "/assets/Wowee.png", name: "Wowee"),
   "haHAA": new Emote(path: "/assets/haHAA.png", name: "haHAA"),
@@ -439,7 +448,8 @@ Map<String, Emote> kEmotes = {
   "Kreygasm": new Emote(path: "/assets/Kreygasm.png", name: "Kreygasm"),
   "PogChamp": new Emote(path: "/assets/PogChamp.png", name: "PogChamp"),
   "SMOrc": new Emote(path: "/assets/SMOrc.png", name: "SMOrc"),
-  "NotLikeThis": new Emote(path: "/assets/NotLikeThis.png", name: "NotLikeThis"),
+  "NotLikeThis":
+      new Emote(path: "/assets/NotLikeThis.png", name: "NotLikeThis"),
   "POGGERS": new Emote(path: "/assets/POGGERS.png", name: "POGGERS"),
   "AYAYA": new Emote(path: "/assets/AYAYA.png", name: "AYAYA"),
   "PepOk": new Emote(path: "/assets/PepOk.png", name: "PepOk"),
@@ -453,20 +463,24 @@ Map<String, Emote> kEmotes = {
   "COGGERS": new Emote(path: "/assets/COGGERS.png", name: "COGGERS"),
   "PepoWant": new Emote(path: "/assets/PepoWant.png", name: "PepoWant"),
   "Clap": new Emote(path: "/assets/Clap.png", name: "Clap"),
-  "FeelsWeirdMan": new Emote(path: "/assets/FeelsWeirdMan.png", name: "FeelsWeirdMan"),
+  "FeelsWeirdMan":
+      new Emote(path: "/assets/FeelsWeirdMan.png", name: "FeelsWeirdMan"),
   "monkaMEGA": new Emote(path: "/assets/monkaMEGA.png", name: "monkaMEGA"),
   "ComfyDog": new Emote(path: "/assets/ComfyDog.png", name: "ComfyDog"),
   "GIMI": new Emote(path: "/assets/GIMI.png", name: "GIMI"),
   "MOOBERS": new Emote(path: "/assets/MOOBERS.png", name: "MOOBERS"),
   "PepoBan": new Emote(path: "/assets/PepoBan.png", name: "PepoBan"),
   "ComfyAYA": new Emote(path: "/assets/ComfyAYA.png", name: "ComfyAYA"),
-  "ComfyFerret": new Emote(path: "/assets/ComfyFerret.png", name: "ComfyFerret"),
+  "ComfyFerret":
+      new Emote(path: "/assets/ComfyFerret.png", name: "ComfyFerret"),
   "BOOMER": new Emote(path: "/assets/BOOMER.png", name: "BOOMER"),
   "ZOOMER": new Emote(path: "/assets/ZOOMER.png", name: "ZOOMER"),
   "SOY": new Emote(path: "/assets/SOY.png", name: "SOY"),
-  "FeelsPepoMan": new Emote(path: "/assets/FeelsPepoMan.png", name: "FeelsPepoMan"),
+  "FeelsPepoMan":
+      new Emote(path: "/assets/FeelsPepoMan.png", name: "FeelsPepoMan"),
   "ComfyCat": new Emote(path: "/assets/ComfyCat.png", name: "ComfyCat"),
-  "ComfyPOTATO": new Emote(path: "/assets/ComfyPOTATO.png", name: "ComfyPOTATO"),
+  "ComfyPOTATO":
+      new Emote(path: "/assets/ComfyPOTATO.png", name: "ComfyPOTATO"),
   "SUGOI": new Emote(path: "/assets/SUGOI.png", name: "SUGOI"),
   "DJPepo": new Emote(path: "/assets/DJPepo.png", name: "DJPepo"),
   "CampFire": new Emote(path: "/assets/CampFire.png", name: "CampFire"),
@@ -484,7 +498,8 @@ Map<String, Emote> kEmotes = {
   "EZ": new Emote(path: "/assets/EZ.png", name: "EZ"),
   "Pepega": new Emote(path: "/assets/Pepega.png", name: "Pepega"),
   "shyLurk": new Emote(path: "/assets/shyLurk.png", name: "shyLurk"),
-  "FeelsOkayMan": new Emote(path: "/assets/FeelsOkayMan.png", name: "FeelsOkayMan"),
+  "FeelsOkayMan":
+      new Emote(path: "/assets/FeelsOkayMan.png", name: "FeelsOkayMan"),
   "POKE": new Emote(path: "/assets/POKE.png", name: "POKE"),
   "PepoDance": new Emote(path: "/assets/PepoDance.png", name: "PepoDance"),
   "ORDAH": new Emote(path: "/assets/ORDAH.png", name: "ORDAH"),
@@ -492,8 +507,10 @@ Map<String, Emote> kEmotes = {
   "PepoGood": new Emote(path: "/assets/PepoGood.png", name: "PepoGood"),
   "PepeJam": new Emote(path: "/assets/PepeJam.png", name: "PepeJam"),
   "LAG": new Emote(path: "/assets/LAG.png", name: "LAG"),
-  "SOTRIGGERED": new Emote(path: "/assets/SOTRIGGERED.png", name: "SOTRIGGERED"),
-  "OnlyPretending": new Emote(path: "/assets/OnlyPretending.png", name: "OnlyPretending"),
+  "SOTRIGGERED":
+      new Emote(path: "/assets/SOTRIGGERED.png", name: "SOTRIGGERED"),
+  "OnlyPretending":
+      new Emote(path: "/assets/OnlyPretending.png", name: "OnlyPretending"),
   "cmonBruh": new Emote(path: "/assets/cmonBruh.png", name: "cmonBruh"),
   "VroomVroom": new Emote(path: "/assets/VroomVroom.png", name: "VroomVroom"),
   "loliDance": new Emote(path: "/assets/loliDance.png", name: "loliDance"),
@@ -505,10 +522,12 @@ Map<String, Emote> kEmotes = {
   "SLEEPY": new Emote(path: "/assets/SLEEPY.png", name: "SLEEPY"),
   "GODMAN": new Emote(path: "/assets/GODMAN.png", name: "GODMAN"),
   "NOM": new Emote(path: "/assets/NOM.png", name: "NOM"),
-  "FeelsDumbMan": new Emote(path: "/assets/FeelsDumbMan.png", name: "FeelsDumbMan"),
+  "FeelsDumbMan":
+      new Emote(path: "/assets/FeelsDumbMan.png", name: "FeelsDumbMan"),
   "HONK": new Emote(path: "/assets/HONK.png", name: "HONK"),
   "SEMPAI": new Emote(path: "/assets/SEMPAI.png", name: "SEMPAI"),
-  "OSTRIGGERED": new Emote(path: "/assets/OSTRIGGERED.png", name: "OSTRIGGERED"),
+  "OSTRIGGERED":
+      new Emote(path: "/assets/OSTRIGGERED.png", name: "OSTRIGGERED"),
   "MiyanoBird": new Emote(path: "/assets/MiyanoBird.png", name: "MiyanoBird"),
   "KING": new Emote(path: "/assets/KING.png", name: "KING"),
   "PIKOHH": new Emote(path: "/assets/PIKOHH.png", name: "PIKOHH"),
@@ -517,11 +536,13 @@ Map<String, Emote> kEmotes = {
   "OhISee": new Emote(path: "/assets/OhISee.png", name: "OhISee"),
   "WeirdChamp": new Emote(path: "/assets/WeirdChamp.png", name: "WeirdChamp"),
   "RedCard": new Emote(path: "/assets/RedCard.png", name: "RedCard"),
-  "illyaTriggered": new Emote(path: "/assets/illyaTriggered.png", name: "illyaTriggered"),
+  "illyaTriggered":
+      new Emote(path: "/assets/illyaTriggered.png", name: "illyaTriggered"),
   "SadBenis": new Emote(path: "/assets/SadBenis.png", name: "SadBenis"),
   "PeepoHappy": new Emote(path: "/assets/PeepoHappy.png", name: "PeepoHappy"),
   "ComfyWAG": new Emote(path: "/assets/ComfyWAG.png", name: "ComfyWAG"),
-  "MiyanoComfy": new Emote(path: "/assets/MiyanoComfy.png", name: "MiyanoComfy"),
+  "MiyanoComfy":
+      new Emote(path: "/assets/MiyanoComfy.png", name: "MiyanoComfy"),
   "sataniaLUL": new Emote(path: "/assets/sataniaLUL.png", name: "sataniaLUL"),
   "DELUSIONAL": new Emote(path: "/assets/DELUSIONAL.png", name: "DELUSIONAL"),
 };
