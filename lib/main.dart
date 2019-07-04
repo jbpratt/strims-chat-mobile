@@ -88,6 +88,22 @@ class App extends StatelessWidget {
   }
 }
 
+class WSClient {
+  String address;
+  String token;
+  WebSocketChannel channel;
+
+  WSClient(this.address, {this.token});
+
+  WebSocketChannel dial() {
+    print("opening channel");
+    channel = IOWebSocketChannel.connect(this.address,
+        headers:
+            token?.isNotEmpty == true ? {'Cookie': 'jwt=${this.token}'} : {});
+    return channel;
+  }
+}
+
 class ChatPage extends StatefulWidget {
   @override
   _ChatPageState createState() => _ChatPageState();
@@ -97,23 +113,26 @@ class _ChatPageState extends State<ChatPage> {
   WebSocketChannel channel;
   TextEditingController controller;
   List<Message> list = [];
+  WSClient ws = new WSClient(kAddress, token: kUser.jwt);
   //List<Widget> output;
 
-  @override
-  void initState() {
-    super.initState();
-    String jwt = kUser.jwt;
-    channel = IOWebSocketChannel.connect(kAddress,
-        headers: jwt?.isNotEmpty == true ? {'Cookie': 'jwt=$jwt'} : {});
-    controller = TextEditingController();
-
-    channel.stream.listen((onData) {
+  void listen() {
+    var channel = ws.dial();
+    ws.channel = channel;
+    ws.channel.stream.listen((onData) {
       if (onData is String) {
         handleReceive(onData);
       }
     }, onError: (error) {
       print(error.toString());
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController();
+    listen();
   }
 
   Future _showDialog() async {
@@ -137,7 +156,6 @@ class _ChatPageState extends State<ChatPage> {
                 child: new Text("Close"),
                 onPressed: () {
                   Navigator.pop(context);
-                  setState(() {});
                 },
               )
             ],
@@ -166,12 +184,6 @@ class _ChatPageState extends State<ChatPage> {
       Message m =
           new Message.fromJson(rec.trim(), convert.json.decode(content));
       if (m.type == "MSG") {
-        // var x = m.data.split(" ");
-        // for (int i = 0; i < x.length; i++) {
-        //   print(x[i]);
-        //   // use TextSpan maybe
-        //   //output.add(Text(x[i]));
-        // }
         setState(() => list.add(m));
       }
     }
@@ -214,7 +226,7 @@ class _ChatPageState extends State<ChatPage> {
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.send),
         onPressed: () {
-          sendData();
+          this.sendData();
         },
       ),
     );
