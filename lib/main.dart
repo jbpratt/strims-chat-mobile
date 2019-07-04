@@ -61,6 +61,10 @@ MyInAppBrowser inAppBrowser = new MyInAppBrowser();
 void main() => runApp(App());
 
 User kUser = new User();
+Map<String, Emote> kEmotes = {
+  "4Head": new Emote(path: "/assets/4Head.png", name: "4Head"),
+  "ComfyApe": new Emote(path: "/assets/ComfyApe.png", name: "ComfyApe")
+};
 final String kAppTitle = "Strims";
 final String kLogoPath = "assets/ComfyApe.png";
 final String kAddress = "wss://chat.strims.gg/ws";
@@ -97,7 +101,23 @@ class _ChatPageState extends State<ChatPage> {
   WebSocketChannel channel;
   TextEditingController controller;
   List<Message> list = [];
+  List<InlineSpan> output = [];
+
   //List<Widget> output;
+
+  // void _loadEmotes(http.Response resp) async {
+  //   var emoteResp = await http.get("https://strims.gg/api/profile");
+  //   if (emoteResp.statusCode == 200) {
+  //     var jsonResponse = convert.jsonDecode(emoteResp.body);
+  //     var emoteList = jsonResponse['default'];
+  //     for (var emote in emoteList) {
+  //       kEmotes[emote] =
+  //           new Emote(name: emote, path: "/assets/" + emote + ".png");
+  //     }
+  //   } else {
+  //     print("Emote request failed with status: ${emoteResp.statusCode}.");
+  //   }
+  // }
 
   @override
   void initState() {
@@ -163,9 +183,9 @@ class _ChatPageState extends State<ChatPage> {
     } else {
       String rec = msg.split(new RegExp(r"{[^}]*}"))[0];
       String content = msg.split(new RegExp(r"^[^ ]*"))[1];
-      Message m =
-          new Message.fromJson(rec.trim(), convert.json.decode(content));
-      if (m.type == "MSG") {
+      if (rec.trim() == "MSG" || rec.trim() == "PRIVMSG") {
+        Message m =
+            new Message.fromJson(rec.trim(), convert.json.decode(content));
         // var x = m.data.split(" ");
         // for (int i = 0; i < x.length; i++) {
         //   print(x[i]);
@@ -248,7 +268,7 @@ class _MessageListItem extends ListTile {
   _MessageListItem(Message msg)
       : super(
             dense: true,
-            title: Text(msg.data,
+            title: Text(msg.data.toString(),
                 style: TextStyle(
                   color: Colors.grey[400],
                 )),
@@ -263,7 +283,7 @@ class Message {
   String type;
   String nick;
   int timestamp;
-  String data;
+  List<MessageSegment> data;
 
   Message({this.type, this.nick, this.timestamp, this.data});
 
@@ -274,12 +294,50 @@ class Message {
   }
 
   factory Message.fromJson(String type, Map parsedJson) {
+    List<MessageSegment> _tokenizeMsg(String data) {
+      List<MessageSegment> tmpData = [];
+      String tmpBuffer = "";
+      if (data == null) {
+        return tmpData;
+      }
+
+      for (String segment in data.split(" ")) {
+        if (kEmotes.containsKey(segment)) {
+          tmpData.add(new MessageSegment("text", tmpBuffer + " "));
+          tmpBuffer = "";
+          tmpData.add(new MessageSegment("emote", segment));
+        } else {
+          tmpBuffer += " " + segment;
+        }
+      }
+
+      if (tmpBuffer != "") {
+        tmpData.add(new MessageSegment("text", tmpBuffer + " "));
+      }
+
+      return tmpData;
+    }
+
+    List<MessageSegment> message = _tokenizeMsg(parsedJson['data']);
+    print(parsedJson['data']);
     return Message(
         type: type,
         nick: parsedJson['nick'],
         timestamp: parsedJson['timestamp'],
-        data: parsedJson['data']);
+        data: message);
   }
+}
+
+class MessageSegment {
+  String type;
+  String data;
+
+  @override
+  String toString() {
+    return "{ type: \"" + type + "\", data: \"" + data + "\" }";
+  }
+
+  MessageSegment(this.type, this.data);
 }
 
 class User {
