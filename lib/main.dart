@@ -100,6 +100,10 @@ class WSClient {
 
   WSClient(this.address, {this.token});
 
+  void updateToken(String token) {
+    this.token = token;
+  }
+
   WebSocketChannel dial() {
     print("opening channel");
     channel = IOWebSocketChannel.connect(this.address,
@@ -115,15 +119,28 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  WebSocketChannel channel;
   TextEditingController controller;
   List<Message> list = [];
   WSClient ws = new WSClient(kAddress, token: kUser.jwt);
   List<InlineSpan> output = [];
 
+  void infoMsg(String msg) {
+    Message m = new Message(
+        type: "MSG",
+        nick: "",
+        data: <MessageSegment>[MessageSegment("text", msg)],
+        timestamp: 0);
+    setState(() => list.add(m));
+  }
+
   void listen() {
+    infoMsg("Connecting to chat.strims.gg ...");
     var channel = ws.dial();
+    print("channel dialed");
+    infoMsg("Connection established");
+    infoMsg("Currently serving 141 connections and 68 users");
     ws.channel = channel;
+    print("listening...");
     ws.channel.stream.listen((onData) {
       if (onData is String) {
         handleReceive(onData);
@@ -131,8 +148,24 @@ class _ChatPageState extends State<ChatPage> {
     }, onError: (error) {
       print(error.toString());
     });
+    print("leaving listen()");
   }
 
+  void updateToken() {
+    ws.updateToken(kUser.jwt);
+  }
+
+  void resetChannel() {
+    print("closing channel");
+    ws.channel.sink.close();
+    print("channel closed");
+
+    print("updating token");
+    updateToken();
+    print("updating token");
+
+    listen();
+  }
   // void _loadEmotes(http.Response resp) async {
   //   var emoteResp = await http.get("https://strims.gg/api/profile");
   //   if (emoteResp.statusCode == 200) {
@@ -152,6 +185,7 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
     controller = TextEditingController();
     listen();
+    print("leaving initState()");
   }
 
   Future _showDialog() async {
@@ -175,6 +209,7 @@ class _ChatPageState extends State<ChatPage> {
                 child: new Text("Close"),
                 onPressed: () {
                   Navigator.pop(context);
+                  this.resetChannel();
                 },
               )
             ],
@@ -188,16 +223,13 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (controller.text.isNotEmpty) {
-      channel.sink.add('MSG {"data":"' + controller.text + '"}');
+      ws.channel.sink.add('MSG {"data":"' + controller.text + '"}');
       controller.text = "";
     }
   }
 
   void sendDataKeyboard(String data) {
-    if (controller.text.isNotEmpty) {
-      channel.sink.add('MSG {"data":"' + controller.text + '"}');
-      controller.text = "";
-    }
+    sendData();
   }
 
   void handleReceive(String msg) {
@@ -218,7 +250,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
-    channel.sink.close();
+    ws.channel.sink.close();
     super.dispose();
   }
 
@@ -232,32 +264,25 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     return Scaffold(
-      appBar: kAppBar,
-      body: Column(children: <Widget>[
-        Container(
-          child: Form(
-            child: new TextFormField(
-              decoration: new InputDecoration(
-                labelText: label,
-                fillColor: Colors.grey[900],
-                filled: true,
+        appBar: kAppBar,
+        body: Column(children: <Widget>[
+          Container(
+            child: Form(
+              child: new TextFormField(
+                decoration: new InputDecoration(
+                  labelText: label,
+                  fillColor: Colors.grey[900],
+                  filled: true,
+                ),
+                controller: controller,
+                onFieldSubmitted: sendDataKeyboard,
               ),
-              controller: controller,
-              onFieldSubmitted: sendDataKeyboard,
             ),
           ),
-        ),
-        Expanded(
-          child: ListView(children: <Widget>[MessageList(list)]),
-        )
-      ]),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.send),
-        onPressed: () {
-          this.sendData();
-        },
-      ),
-    );
+          Expanded(
+            child: ListView(children: <Widget>[MessageList(list)]),
+          )
+        ]));
   }
 }
 
@@ -308,9 +333,12 @@ class Message {
   Message({this.type, this.nick, this.timestamp, this.data});
 
   String readTimestamp() {
-    DateTime d =
-        new DateTime.fromMillisecondsSinceEpoch(this.timestamp, isUtc: true);
-    return d.hour.toString() + ":" + d.minute.toString();
+    if (this.timestamp != 0) {
+      DateTime d =
+          new DateTime.fromMillisecondsSinceEpoch(this.timestamp, isUtc: true);
+      return d.hour.toString() + ":" + d.minute.toString();
+    }
+    return "";
   }
 
   factory Message.fromJson(String type, Map parsedJson) {
