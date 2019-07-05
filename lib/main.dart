@@ -40,7 +40,6 @@ class Browser extends InAppBrowser {
   Future onLoadStop(String url) async {
     var x = (await CookieManager.getCookie("https://chat.strims.gg", "jwt"));
     kUser.jwt = x['value'];
-    print(kUser.jwt);
   }
 
   @override
@@ -162,7 +161,7 @@ class _ChatPageState extends State<ChatPage> {
 
     print("updating token");
     updateToken();
-    print("updating token");
+    print("updated token");
 
     listen();
   }
@@ -300,9 +299,47 @@ class MessageList extends StatelessWidget {
       controller: _controller,
       itemCount: _messages.length,
       itemBuilder: (BuildContext ctx, int index) {
+        var msg = _messages[index];
+
+        var output = <InlineSpan>[];
+
+        msg.data.forEach((val) {
+          // if type text, render text text span
+          // if type emote, render img span
+          // output.add(x);
+
+          switch (val.type) {
+            case "text":
+              var x = TextSpan(
+                  text: val.data.toString(),
+                  style: TextStyle(color: Colors.grey[400]));
+              output.add(x);
+              break;
+            case "emote":
+              var x = Image(
+                image: AssetImage('assets/${val.data}.png'), // not the best way
+              );
+              output.add(WidgetSpan(child: x));
+              break;
+            default:
+              print(val.type);
+          }
+        });
+        var nick = TextSpan(
+            text: "\n" + msg.readTimestamp() + " " + msg.nick,
+            style: TextStyle(color: Colors.grey[600]));
+        output.add(nick);
+        // var lt = ListTile(
+        //   subtitle: Text(msg.readTimestamp() + " " + msg.nick,
+        //       style: TextStyle(
+        //         color: Colors.grey[600],
+        //       )),
+        // );
         return Card(
           color: Colors.grey[900],
-          child: _MessageListItem(_messages[index]), // WidgetSpan()
+          child: Text.rich(TextSpan(
+              children:
+                  output)), //_MessageListItem(_messages[index]), // WidgetSpan()
         );
       },
     );
@@ -360,7 +397,8 @@ class Message {
             kEmoteModifiers.contains(colonSplit[1])) {
           tmpData.add(new MessageSegment("text", tmpBuffer + " "));
           tmpBuffer = "";
-          tmpData.add(new MessageSegment("emote", colonSplit[0], modifier: colonSplit[1]));
+          tmpData.add(new MessageSegment("emote", colonSplit[0],
+              modifier: colonSplit[1]));
         } else {
           tmpBuffer += " " + segment;
         }
@@ -389,7 +427,8 @@ class MessageSegment {
 
   @override
   String toString() {
-    return "{ type: \"" + type + "\", data: \"" + data + "\" }";
+    return data;
+    //return "{ type: \"" + type + "\", data: \"" + data + "\" }";
   }
 
   MessageSegment(this.type, this.data, {this.modifier});
