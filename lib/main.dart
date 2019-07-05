@@ -350,10 +350,17 @@ class Message {
       }
 
       for (String segment in data.split(" ")) {
-        if (kEmotes.containsKey(segment)) {
+        List<String> colonSplit = segment.split(":");
+        if (colonSplit.length == 1 && kEmotes.containsKey(segment)) {
           tmpData.add(new MessageSegment("text", tmpBuffer + " "));
           tmpBuffer = "";
           tmpData.add(new MessageSegment("emote", segment));
+        } else if (colonSplit.length == 2 &&
+            kEmotes.containsKey(colonSplit[0]) &&
+            kEmoteModifiers.contains(colonSplit[1])) {
+          tmpData.add(new MessageSegment("text", tmpBuffer + " "));
+          tmpBuffer = "";
+          tmpData.add(new MessageSegment("emote", colonSplit[0], modifier: colonSplit[1]));
         } else {
           tmpBuffer += " " + segment;
         }
@@ -378,13 +385,14 @@ class Message {
 class MessageSegment {
   String type;
   String data;
+  String modifier;
 
   @override
   String toString() {
     return "{ type: \"" + type + "\", data: \"" + data + "\" }";
   }
 
-  MessageSegment(this.type, this.data);
+  MessageSegment(this.type, this.data, {this.modifier});
 }
 
 class User {
@@ -400,6 +408,17 @@ class Emote {
 
   Emote({this.name, this.path});
 }
+
+List<String> kEmoteModifiers = [
+  "spin",
+  "flip",
+  "mirror",
+  "rustle",
+  "love",
+  "worth",
+  "rain",
+  "snow",
+];
 
 Map<String, Emote> kEmotes = {
   "ComfyApe": new Emote(path: "/assets/ComfyApe.png", name: "ComfyApe"),
