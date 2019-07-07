@@ -2,11 +2,10 @@ import 'dart:convert' as convert;
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:majora/browser.dart';
+import 'package:majora/emotes.dart';
 import 'package:majora/messages.dart';
 import 'package:majora/user.dart';
 import 'package:majora/wsclient.dart';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 User kUser = new User();
 
@@ -58,6 +57,7 @@ class _ChatPageState extends State<ChatPage> {
   List<Message> list = [];
   WSClient ws = new WSClient(kAddress, token: kUser.jwt);
   List<InlineSpan> output = [];
+  Future<Map<String, Emote>> emotes;
 
   void infoMsg(String msg) {
     Message m = new Message(
@@ -122,6 +122,10 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     controller = TextEditingController();
+    emotes = getEmotes().then((onValue) {
+      print(emotes);
+    });
+    print("emotes requested");
     listen();
     print("leaving initState()");
   }

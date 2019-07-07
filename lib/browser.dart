@@ -1,8 +1,6 @@
-import 'dart:io';
-
-import 'dart:convert' as convert;
-import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:flutter_inappbrowser/flutter_inappbrowser.dart';
+import 'package:http/http.dart';
 import 'package:majora/user.dart';
 
 
@@ -35,10 +33,10 @@ class Browser extends InAppBrowser {
   Future onExit() async {
     var header = new Map<String, String>();
     header['Cookie'] = 'jwt=${kUser.jwt}';
-    var response =
-        await http.get("https://strims.gg/api/profile", headers: header);
+    Response response =
+        await get("https://strims.gg/api/profile", headers: header);
     if (response.statusCode == 200) {
-      var jsonResponse = convert.jsonDecode(response.body);
+      var jsonResponse = jsonDecode(response.body);
       kUser.nick = jsonResponse['username'];
     } else {
       print("Request failed with status: ${response.statusCode}.");
