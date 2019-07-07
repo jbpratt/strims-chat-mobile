@@ -10,7 +10,7 @@ import 'package:majora/wsclient.dart';
 User kUser = new User();
 
 final String kAppTitle = "Strims";
-final String kLogoPath = "assets/ComfyApe.png";
+final String kLogoPath = "assets/favicon.ico";
 final String kAddress = "wss://chat.strims.gg/ws";
 final AppBar kAppBar = new AppBar(
   title: Row(
@@ -206,6 +206,37 @@ class _ChatPageState extends State<ChatPage> {
 
     return Scaffold(
         appBar: kAppBar,
+        drawer: Drawer(
+          child: ListView(
+            children: <Widget>[
+              ListTile(
+                title: Text('Settings'),
+                trailing: Icon(Icons.settings),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => SettingsRoute(),
+                  ));
+                  // Navigator.of(context).push(MaterialPageRoute(
+                  //     builder: (BuildContext context) =>
+                  //         new SettingsRoute()));
+                },
+              ),
+              ListTile(
+                title: Text('User list'),
+                trailing: Icon(Icons.people),
+              ),
+              ListTile(
+                title: Text('PMs'),
+                trailing: Icon(Icons.mail),
+              ),
+              RaisedButton(
+                onPressed: () {},
+                child: Text('Logout'),
+              )
+            ],
+          ),
+        ),
         body: Column(children: <Widget>[
           Container(
             child: Form(
@@ -224,5 +255,43 @@ class _ChatPageState extends State<ChatPage> {
             child: ListView(children: <Widget>[MessageList(list)]),
           )
         ]));
+  }
+}
+
+class SettingsRoute extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Settings"),
+      ),
+      body: Center(
+        child: RaisedButton(
+          onPressed: () {
+            // Navigate back to first route when tapped.
+          },
+          child: Text('Save settings'),
+        ),
+      ),
+    );
+  }
+}
+
+class SecondRoute extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Second Route"),
+      ),
+      body: Center(
+        child: RaisedButton(
+          onPressed: () {
+            // Navigate back to first route when tapped.
+          },
+          child: Text('Go back!'),
+        ),
+      ),
+    );
   }
 }

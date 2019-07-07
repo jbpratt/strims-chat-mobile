@@ -63,7 +63,7 @@ class MessageList extends StatelessWidget {
   }
 }
 
-// can be deleted, i like the styling of 
+// can be deleted, i like the styling of
 // the listtile tho
 class _MessageListItem extends ListTile {
   _MessageListItem(Message msg)
@@ -98,25 +98,89 @@ class Message {
   }
 
   factory Message.fromJson(String type, Map parsedJson) {
-    List<MessageSegment> _tokenizeMsg(String data) {
-      List<MessageSegment> tmpData = [];
-      String tmpBuffer = "";
-      if (data == null) {
-        return tmpData;
+    // ignore escaped backticks
+    int _findNextTick(String str) {
+      int base = 0;
+      while (str.length > 0) {
+        var index = str.indexOf('`');
+        if (index == -1) {
+          return -1;
+        } else if (str[(index - 1)] == '\\') {
+          base += index + 1;
+          str = str.substring(index + 1);
+        } else {
+          return index + base;
+        }
       }
+      return -1;
+    }
+
+    List<MessageSegment> _tokenizeCode(String str) {
+      List<MessageSegment> returnList = new List<MessageSegment>();
+      int indexOne = _findNextTick(str);
+      if (indexOne != -1) {
+        String beforeFirstTick = str.substring(0, indexOne);
+        String afterFirstTick = str.substring(indexOne + 1);
+        int indexTwo = _findNextTick(afterFirstTick);
+        if (indexTwo != -1) {
+          String betweenTicks = afterFirstTick.substring(0, indexTwo);
+          String afterSecondTick = afterFirstTick.substring(indexTwo + 1);
+          returnList = (beforeFirstTick.length > 0)
+              ? returnList = [
+                  new MessageSegment('text', beforeFirstTick),
+                  new MessageSegment('code', betweenTicks)
+                ]
+              : returnList = [new MessageSegment('code', betweenTicks)];
+          if (afterSecondTick.length > 0) {
+            returnList.addAll(_tokenizeCode(afterSecondTick));
+          }
+        }
+      } else {
+        returnList.add(new MessageSegment('text', str));
+      }
+      return returnList;
+    }
+
+    List<MessageSegment> _tokenizeSpoiler(String str) {
+      List<MessageSegment> returnList = new List<MessageSegment>();
+      var indexOne = str.indexOf('||');
+      if (indexOne != -1) {
+        var afterTag = str.substring(indexOne + 2);
+        var indexTwo = afterTag.indexOf('||');
+        if (indexTwo != -1) {
+          var betweenTags = afterTag.substring(0, indexTwo);
+          if (new RegExp(r'^\s*$').hasMatch(betweenTags)) {
+            returnList.add(new MessageSegment(
+                'text', str.substring(0, indexOne) + '||||'));
+          } else {
+            returnList.add(new MessageSegment('text',
+                str.substring(0, indexOne) + str.substring(0, indexOne)));
+            returnList.add(new MessageSegment('spoiler', betweenTags));
+            returnList.addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
+          }
+        }
+      } else {
+        returnList.add(new MessageSegment('text', str));
+      }
+      return returnList;
+    }
+
+    List<MessageSegment> _tokenizeEmotes(String data) {
+      List<MessageSegment> returnList = new List<MessageSegment>();
+      String tmpBuffer = "";
 
       for (String segment in data.split(" ")) {
         List<String> colonSplit = segment.split(":");
         if (colonSplit.length == 1 && kEmotes.containsKey(segment)) {
-          tmpData.add(new MessageSegment("text", tmpBuffer + " "));
+          returnList.add(new MessageSegment("text", tmpBuffer + " "));
           tmpBuffer = "";
-          tmpData.add(new MessageSegment("emote", segment));
+          returnList.add(new MessageSegment("emote", segment));
         } else if (colonSplit.length == 2 &&
             kEmotes.containsKey(colonSplit[0]) &&
             kEmoteModifiers.contains(colonSplit[1])) {
-          tmpData.add(new MessageSegment("text", tmpBuffer + " "));
+          returnList.add(new MessageSegment("text", tmpBuffer + " "));
           tmpBuffer = "";
-          tmpData.add(new MessageSegment("emote", colonSplit[0],
+          returnList.add(new MessageSegment("emote", colonSplit[0],
               modifier: colonSplit[1]));
         } else {
           tmpBuffer += " " + segment;
@@ -124,13 +188,26 @@ class Message {
       }
 
       if (tmpBuffer != "") {
-        tmpData.add(new MessageSegment("text", tmpBuffer + " "));
+        returnList.add(new MessageSegment("text", tmpBuffer + " "));
       }
 
-      return tmpData;
+      return returnList;
     }
 
-    List<MessageSegment> message = _tokenizeMsg(parsedJson['data']);
+    List<MessageSegment> _tokenizeLinks(String str) {
+      List<MessageSegment> returnList = new List<MessageSegment>();
+      RegExp reg = new RegExp(r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
+      Iterable<RegExpMatch> matches = reg.allMatches(str);
+      List<String> withoutUrls = str.split(reg);
+      for (var i = 0; i < withoutUrls.length; i++) {
+        returnList.add(new MessageSegment('text', withoutUrls[i]));
+        if (matches.length > i) {
+          returnList.add(new MessageSegment('url', matches.elementAt(i).group(0)));
+        }
+      }
+    }
+
+    List<MessageSegment> message = _tokenizeEmotes(parsedJson['data']);
     return Message(
         type: type,
         nick: parsedJson['nick'],
@@ -143,6 +220,7 @@ class MessageSegment {
   String type;
   String data;
   String modifier;
+  List<MessageSegment> subSegemnts;
 
   @override
   String toString() {
@@ -150,5 +228,5 @@ class MessageSegment {
     //return "{ type: \"" + type + "\", data: \"" + data + "\" }";
   }
 
-  MessageSegment(this.type, this.data, {this.modifier});
+  MessageSegment(this.type, this.data, {this.modifier, this.subSegemnts});
 }
