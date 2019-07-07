@@ -20,23 +20,18 @@ class Chatter {
 
 List<Chatter> buildChatterList(String input) {
   List<dynamic> userList = jsonDecode(input)["users"];
-  List<Chatter> output = new List<Chatter>();
-  userList.forEach((val) {
-    output.add(parseChatter(val));
-  });
+  List<Chatter> output = [];
+  for (int i = 0; i < userList.length; i++) {
+    Chatter newChatter = new Chatter();
+    newChatter.nick = userList[i]['nick'];
+    output.add(newChatter);
+  }
+
+  // sort chatter list
+  output.sort((a,b) => a.nick.compareTo(b.nick));
   return output;
 }
 
 int getConnectionCount(String input) {
   return jsonDecode(input)['connectioncount'];
-}
-
-Chatter parseChatter(Map val) {
-  String nick = val['nick'].toString();
-  List<String> features = new List<String>();
-  List<dynamic> tmp = val['features'];
-  tmp.forEach((val) {
-    features.add(val as String);
-  });
-  return new Chatter(nick: nick, features: features);
 }
