@@ -224,8 +224,15 @@ class MessageSegment {
 
   @override
   String toString() {
+    String segs;
+    for (MessageSegment segment in subSegemnts) {
+      segs += "\n"+segment.toString();
+    }
+    return "{ type: \"" + type + "\", data: \"" + data + "modifier: \"" + modifier +"segments: \"" + segs + "}";
+  }
+
+  String getData() {
     return data;
-    //return "{ type: \"" + type + "\", data: \"" + data + "\" }";
   }
 
   MessageSegment(this.type, this.data, {this.modifier, this.subSegemnts});

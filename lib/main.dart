@@ -53,7 +53,7 @@ class _ChatPageState extends State<ChatPage> {
   List<Message> list = [];
   WSClient ws = new WSClient(kAddress, token: kUser.jwt);
   List<InlineSpan> output = [];
-  List<Chatter> chatters = new List<Chatter>();
+  List<Chatter> chatters = [];
   Future<Map<String, Emote>> emotes;
 
   void infoMsg(String msg) {
@@ -157,6 +157,9 @@ class _ChatPageState extends State<ChatPage> {
       case "NAMES":
         chatters = buildChatterList(data);
         var count = getConnectionCount(data);
+        chatters.forEach((f) {
+          print(f.nick);
+        });
         infoMsg(
             'Currently serving $count connections and ${chatters.length} users');
         break;
@@ -214,17 +217,24 @@ class _ChatPageState extends State<ChatPage> {
                 trailing: Icon(Icons.settings),
                 onTap: () {
                   Navigator.of(context).pop();
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => SettingsRoute(),
-                  ));
-                  // Navigator.of(context).push(MaterialPageRoute(
-                  //     builder: (BuildContext context) =>
-                  //         new SettingsRoute()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsRoute(),
+                      ));
                 },
               ),
               ListTile(
                 title: Text('User list'),
                 trailing: Icon(Icons.people),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  // Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(
+                  //       builder: (context) => ChatterListRoute(chatters),
+                  //     ));
+                },
               ),
               ListTile(
                 title: Text('PMs'),
@@ -262,36 +272,53 @@ class SettingsRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Settings"),
-      ),
-      body: Center(
-        child: RaisedButton(
-          onPressed: () {
-            // Navigate back to first route when tapped.
-          },
-          child: Text('Save settings'),
+        appBar: AppBar(
+          title: Text("Settings"),
         ),
-      ),
-    );
+        body: Column(children: <Widget>[]));
   }
 }
 
-class SecondRoute extends StatelessWidget {
+class ChatterListRoute extends StatelessWidget {
+  List<Chatter> _chatterList;
+
+  ChatterListRoute(this._chatterList);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Second Route"),
-      ),
-      body: Center(
-        child: RaisedButton(
-          onPressed: () {
-            // Navigate back to first route when tapped.
-          },
-          child: Text('Go back!'),
+        appBar: AppBar(
+          title: Text("Chatters"),
         ),
-      ),
-    );
+        body: ListView(
+          children: <Widget>[ChatterList(_chatterList)],
+        ));
   }
+}
+
+class ChatterList extends StatelessWidget {
+  final ScrollController _controller = ScrollController();
+  final List<Chatter> _chatters;
+
+  ChatterList(this._chatters);
+  @override
+  Widget build(BuildContext context) {
+
+    return ListView.builder(
+        shrinkWrap: true,
+        controller: _controller,
+        itemCount: _chatters.length,
+        itemBuilder: (BuildContext ctx, int index) {
+          print(_chatters[index].nick);
+          return Card(
+            color: Colors.grey[900],
+            child: _ChatterListItem(_chatters[index]),
+          );
+        });
+  }
+}
+
+class _ChatterListItem extends ListTile {
+  _ChatterListItem(Chatter chtr)
+      : super(dense: true, title: Text(chtr.nick), onTap: () {});
 }
