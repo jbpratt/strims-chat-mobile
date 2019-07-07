@@ -1,4 +1,4 @@
-import 'dart:convert' as convert;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:majora/browser.dart';
@@ -26,8 +26,6 @@ final AppBar kAppBar = new AppBar(
   ),
 );
 
-
-
 Browser inAppBrowser = new Browser();
 void main() => runApp(App());
 
@@ -45,8 +43,6 @@ class App extends StatelessWidget {
   }
 }
 
-
-
 class ChatPage extends StatefulWidget {
   @override
   _ChatPageState createState() => _ChatPageState();
@@ -57,6 +53,7 @@ class _ChatPageState extends State<ChatPage> {
   List<Message> list = [];
   WSClient ws = new WSClient(kAddress, token: kUser.jwt);
   List<InlineSpan> output = [];
+  List<Chatter> chatters = new List<Chatter>();
   Future<Map<String, Emote>> emotes;
 
   void infoMsg(String msg) {
@@ -73,7 +70,6 @@ class _ChatPageState extends State<ChatPage> {
     var channel = ws.dial();
     print("channel dialed");
     infoMsg("Connection established");
-    infoMsg("Currently serving 141 connections and 68 users");
     ws.channel = channel;
     print("listening...");
     ws.channel.stream.listen((onData) {
@@ -104,30 +100,13 @@ class _ChatPageState extends State<ChatPage> {
     infoMsg("reconnecting...");
     listen();
   }
-  // void _loadEmotes(http.Response resp) async {
-  //   var emoteResp = await http.get("https://strims.gg/api/profile");
-  //   if (emoteResp.statusCode == 200) {
-  //     var jsonResponse = convert.jsonDecode(emoteResp.body);
-  //     var emoteList = jsonResponse['default'];
-  //     for (var emote in emoteList) {
-  //       kEmotes[emote] =
-  //           new Emote(name: emote, path: "/assets/" + emote + ".png");
-  //     }
-  //   } else {
-  //     print("Emote request failed with status: ${emoteResp.statusCode}.");
-  //   }
-  // }
 
   @override
   void initState() {
     super.initState();
     controller = TextEditingController();
-    emotes = getEmotes().then((onValue) {
-      print(emotes);
-    });
-    print("emotes requested");
+    emotes = getEmotes();
     listen();
-    print("leaving initState()");
   }
 
   Future _showDialog() async {
@@ -175,20 +154,41 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void handleReceive(String msg) {
-    if (msg == 'ERR "needlogin"') {
-      infoMsg("ERROR: you must log in to chat");
-      print(msg);
-      return;
-    } else {
-      String rec = msg.split(new RegExp(r"{[^}]*}"))[0];
-      String content = msg.split(new RegExp(r"^[^ ]*"))[1];
-      if (rec.trim() == "MSG" || rec.trim() == "PRIVMSG") {
-        Message m =
-            new Message.fromJson(rec.trim(), convert.json.decode(content));
-
+    String type = msg.split(new RegExp(r"{[^}]*}"))[0].trim();
+    String data = msg.split(new RegExp(r"^[^ ]*"))[1];
+    switch (type) {
+      case "NAMES":
+        chatters = buildChatterList(data);
+        var count = getConnectionCount(data);
+        infoMsg(
+            'Currently serving $count connections and ${chatters.length} users');
+        break;
+      case "MSG":
+        Message m = new Message.fromJson(type, json.decode(data));
         setState(() => list.add(m));
-      }
+        break;
+      case "JOIN":
+        //Chatter c = new Chatter.fromJson(json.decode(data));
+        print("JOIN : " + data);
+        break;
+      case "QUIT":
+        print("QUIT : " + data);
+        break;
+      default:
     }
+    // if (msg == 'ERR "needlogin"') {
+    //   infoMsg("ERROR: you must log in to chat");
+    //   print(msg);
+    //   return;
+    // } else {
+    //   String rec = msg.split(new RegExp(r"{[^}]*}"))[0];
+    //   String content = msg.split(new RegExp(r"^[^ ]*"))[1];
+    //   if (rec.trim() == "MSG" || rec.trim() == "PRIVMSG") {
+    //     Message m = new Message.fromJson(rec.trim(), json.decode(content));
+
+    //     setState(() => list.add(m));
+    //   }
+    // }
   }
 
   @override

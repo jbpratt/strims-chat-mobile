@@ -63,6 +63,8 @@ class MessageList extends StatelessWidget {
   }
 }
 
+// can be deleted, i like the styling of 
+// the listtile tho
 class _MessageListItem extends ListTile {
   _MessageListItem(Message msg)
       : super(
