@@ -68,10 +68,8 @@ class _ChatPageState extends State<ChatPage> {
   void listen() {
     infoMsg("Connecting to chat.strims.gg ...");
     var channel = ws.dial();
-    print("channel dialed");
     infoMsg("Connection established");
     ws.channel = channel;
-    print("listening...");
     ws.channel.stream.listen((onData) {
       if (onData is String) {
         handleReceive(onData);
@@ -79,7 +77,6 @@ class _ChatPageState extends State<ChatPage> {
     }, onError: (error) {
       print(error.toString());
     });
-    print("leaving listen()");
   }
 
   void updateToken() {
@@ -87,25 +84,25 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void resetChannel() {
-    print("closing channel");
     ws.channel.sink.close();
-    print("channel closed");
 
     kUser = inAppBrowser.getNewUser();
 
-    print("updating token");
     updateToken();
-    print("updated token");
 
     infoMsg("reconnecting...");
     listen();
+  }
+
+  Future<void> getAllEmotes() async {
+    kEmotes = await getEmotes();
   }
 
   @override
   void initState() {
     super.initState();
     controller = TextEditingController();
-    emotes = getEmotes();
+    getAllEmotes();
     listen();
   }
 
@@ -175,6 +172,7 @@ class _ChatPageState extends State<ChatPage> {
         print("QUIT : " + data);
         break;
       default:
+        print(type);
     }
     // if (msg == 'ERR "needlogin"') {
     //   infoMsg("ERROR: you must log in to chat");
