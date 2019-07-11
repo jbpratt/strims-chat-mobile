@@ -155,11 +155,10 @@ class _ChatPageState extends State<ChatPage> {
     String data = msg.split(new RegExp(r"^[^ ]*"))[1];
     switch (type) {
       case "NAMES":
-        chatters = buildChatterList(data);
-        var count = getConnectionCount(data);
-        chatters.forEach((f) {
-          print(f.nick);
+        setState(() {
+          chatters.addAll(buildChatterList(data));
         });
+        var count = getConnectionCount(data);
         infoMsg(
             'Currently serving $count connections and ${chatters.length} users');
         break;
@@ -175,7 +174,6 @@ class _ChatPageState extends State<ChatPage> {
         print("QUIT : " + data);
         break;
       default:
-        print(type);
     }
     // if (msg == 'ERR "needlogin"') {
     //   infoMsg("ERROR: you must log in to chat");
@@ -229,11 +227,11 @@ class _ChatPageState extends State<ChatPage> {
                 trailing: Icon(Icons.people),
                 onTap: () {
                   Navigator.of(context).pop();
-                  // Navigator.push(
-                  //     context,
-                  //     MaterialPageRoute(
-                  //       builder: (context) => ChatterListRoute(chatters),
-                  //     ));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatterListRoute(chatters),
+                      ));
                 },
               ),
               ListTile(
@@ -280,7 +278,7 @@ class SettingsRoute extends StatelessWidget {
 }
 
 class ChatterListRoute extends StatelessWidget {
-  List<Chatter> _chatterList;
+  final List<Chatter> _chatterList;
 
   ChatterListRoute(this._chatterList);
 
@@ -303,13 +301,11 @@ class ChatterList extends StatelessWidget {
   ChatterList(this._chatters);
   @override
   Widget build(BuildContext context) {
-
     return ListView.builder(
         shrinkWrap: true,
         controller: _controller,
         itemCount: _chatters.length,
         itemBuilder: (BuildContext ctx, int index) {
-          print(_chatters[index].nick);
           return Card(
             color: Colors.grey[900],
             child: _ChatterListItem(_chatters[index]),
