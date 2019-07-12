@@ -106,7 +106,7 @@ class _ChatPageState extends State<ChatPage> {
     listen();
   }
 
-  Future _showDialog() async {
+  Future _showLoginDialog() async {
     await showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -136,8 +136,8 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void sendData() {
-    if (kUser.jwt == null) {
-      _showDialog();
+    if (kUser.jwt == null || kUser.jwt == "") {
+      _showLoginDialog();
     }
 
     if (controller.text.isNotEmpty) {
@@ -175,19 +175,6 @@ class _ChatPageState extends State<ChatPage> {
         break;
       default:
     }
-    // if (msg == 'ERR "needlogin"') {
-    //   infoMsg("ERROR: you must log in to chat");
-    //   print(msg);
-    //   return;
-    // } else {
-    //   String rec = msg.split(new RegExp(r"{[^}]*}"))[0];
-    //   String content = msg.split(new RegExp(r"^[^ ]*"))[1];
-    //   if (rec.trim() == "MSG" || rec.trim() == "PRIVMSG") {
-    //     Message m = new Message.fromJson(rec.trim(), json.decode(content));
-
-    //     setState(() => list.add(m));
-    //   }
-    // }
   }
 
   @override
@@ -196,14 +183,18 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
+  String determineLabel() {
+    if (kUser.nick == null || kUser.nick.isEmpty) {
+      return "You need to be signed in to chat";
+    } else {
+      return 'Write something ${kUser.nick} ...';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    String label;
-    if (kUser.nick == null || kUser.nick.isEmpty) {
-      label = "You need to be signed in to chat";
-    } else {
-      label = 'Write something ${kUser.nick} ...';
-    }
+
+    String label = determineLabel();
 
     return Scaffold(
         appBar: kAppBar,
@@ -237,9 +228,31 @@ class _ChatPageState extends State<ChatPage> {
               ListTile(
                 title: Text('PMs'),
                 trailing: Icon(Icons.mail),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WhispersRoute(),
+                      ));
+                },
               ),
               RaisedButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (kUser == null || kUser.jwt.isEmpty || kUser.jwt == null) {
+                    // TODO: not logged in dialog
+                  }
+                  kUser.nick = "";
+                  kUser.jwt = "";
+                  kUser = null;
+                  
+                  resetChannel();
+                  // reset conn
+                  Navigator.of(context).pop();
+                  setState(() {
+                    label = determineLabel();
+                  });
+                },
                 child: Text('Logout'),
               )
             ],
@@ -263,6 +276,17 @@ class _ChatPageState extends State<ChatPage> {
             child: ListView(children: <Widget>[MessageList(list)]),
           )
         ]));
+  }
+}
+
+class WhispersRoute extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: Text("Whispers"),
+        ),
+        body: Column(children: <Widget>[]));
   }
 }
 

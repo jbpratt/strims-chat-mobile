@@ -16,8 +16,9 @@ class Browser extends InAppBrowser {
 
   @override
   Future onLoadStop(String url) async {
-    var x = (await CookieManager.getCookie("https://chat.strims.gg", "jwt"));
-    kUser.jwt = x['value'];
+    var x = (await CookieManager.getCookie("https://chat.strims.gg", "jwt").then((y) {
+      kUser.jwt = y['value'];
+    }));
   }
 
   User getNewUser() {
