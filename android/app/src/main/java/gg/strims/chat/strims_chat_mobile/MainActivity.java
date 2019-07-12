@@ -1,4 +1,4 @@
-package gg.strims.chat;
+package gg.strims.chat.strims_chat_mobile;
 
 import android.os.Bundle;
 import io.flutter.app.FlutterActivity;
