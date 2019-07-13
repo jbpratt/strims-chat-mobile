@@ -242,6 +242,30 @@ class Message {
       }
     }
 
+    _flattenTree(MessageSegment base) {
+      if (base.subSegemnts != null) {
+        List<MessageSegment> newList = [];
+        for (MessageSegment s1 in base.subSegemnts) {
+          _flattenTree(s1);
+          if (s1.type == 'text' && s1.modifier == null && s1.subSegemnts != null) {
+            bool canFlatten = true;
+            List<MessageSegment> tmpList = [];
+            for (MessageSegment s2 in s1.subSegemnts) {
+              tmpList.add(s2);
+            }
+            if (canFlatten) {
+              newList.addAll(tmpList);
+            } else {
+              newList.add(s1);
+            }
+          } else {
+            newList.add(s1);
+          }
+        }
+        base.subSegemnts = newList;
+      }
+    }
+
     MessageSegment _tokenizeMessage(String message) {
       // get /me
       MessageSegment base = _tokenizeSelf(message);
@@ -253,6 +277,7 @@ class Message {
       _tokenizeGreentext(base);
       //_tokenizeLinks(base);
       _tokenizeEmotes(base);
+      _flattenTree(base);
 
       return base;
     }
