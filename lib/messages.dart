@@ -31,36 +31,47 @@ class MessageList extends StatelessWidget {
           case "PRIVMSG":
             nick = TextSpan(
                 text: msg.nick + " whispered: ",
-                style: TextStyle(background: Paint()..color = Colors.blue[400]));
+                style:
+                    TextStyle(background: Paint()..color = Colors.blue[400]));
             break;
           default:
             nick = TextSpan(
-                text: msg.nick + ": ", style: TextStyle(background: Paint()..color = Colors.grey[900]));
+                text: msg.nick + ": ",
+                style:
+                    TextStyle(background: Paint()..color = Colors.grey[900]));
         }
 
         output.add(nick);
 
-        msg.data.forEach((val) {
-          // if type text, render text text span
-          // if type emote, render img span
-          // output.add(x);
-          switch (val.type) {
-            case "text":
-              TextSpan x = TextSpan(
-                  text: val.data.toString(),
-                  style: TextStyle(color: Colors.grey[400]));
-              output.add(x);
-              break;
-            case "emote":
-              Image x = Image(
-                image: AssetImage('assets/${val.data}.png'), // not the best way
-              );
-              output.add(WidgetSpan(child: x));
-              break;
-            default:
-              print(val.type);
-          }
-        });
+        // TODO: do this properly
+        if (msg.data.subSegements != null) {
+          msg.data.subSegements.forEach((val) {
+            // if type text, render text text span
+            // if type emote, render img span
+            // output.add(x);
+            switch (val.type) {
+              case "text":
+                TextSpan x = TextSpan(
+                    text: val.data.toString(),
+                    style: TextStyle(color: Colors.grey[400]));
+                output.add(x);
+                break;
+              case "emote":
+                Image x = Image(
+                  image:
+                      AssetImage('assets/${val.data}.png'), // not the best way
+                );
+                output.add(WidgetSpan(child: x));
+                break;
+              default:
+                TextSpan x = TextSpan(
+                    text: val.toString(),
+                    style: TextStyle(color: Colors.grey[400]));
+                output.add(x);
+                break;
+            }
+          });
+        }
 
         return Card(
             color: Colors.transparent,
@@ -247,7 +258,9 @@ class Message {
         List<MessageSegment> newList = [];
         for (MessageSegment s1 in base.subSegemnts) {
           _flattenTree(s1);
-          if (s1.type == 'text' && s1.modifier == null && s1.subSegemnts != null) {
+          if (s1.type == 'text' &&
+              s1.modifier == null &&
+              s1.subSegemnts != null) {
             bool canFlatten = true;
             List<MessageSegment> tmpList = [];
             for (MessageSegment s2 in s1.subSegemnts) {
@@ -298,6 +311,8 @@ class MessageSegment {
   String modifier;
   List<MessageSegment> subSegemnts;
 
+  get subSegements => subSegemnts;
+
   @override
   String toString() {
     return toStringIndent(1);
@@ -307,13 +322,13 @@ class MessageSegment {
     String segs = '';
     if (subSegemnts != null) {
       for (MessageSegment segment in subSegemnts) {
-        segs += '  ' * depth + segment.toStringIndent(depth + 1) + '\n';
+        segs += '    ' * depth + segment.toStringIndent(depth + 1) + '\n';
       }
     }
-    String dataS = (data.length > 0) ? ', data: ' + data : '';
+    String dataS = (data.length > 0) ? ', data: "' + data + '" ' : '';
     String mod = (modifier != null) ? ', mod: ' + modifier : '';
     String newline =
-        (segs.length > 0) ? '\n' + segs + '  ' * depth + ']}' : ']}';
+        (segs.length > 0) ? '\n' + segs + '    ' * (depth - 1) + ']}' : ']}';
     return '{type: ' + type + mod + dataS + ', children: [' + newline;
   }
 
