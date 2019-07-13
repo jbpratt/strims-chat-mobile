@@ -69,7 +69,7 @@ class _ChatPageState extends State<ChatPage> {
     Message m = new Message(
         type: "MSG",
         nick: "",
-        data: <MessageSegment>[MessageSegment("text", msg)],
+        data: MessageSegment("text", msg),
         timestamp: 0);
     setState(() => list.add(m));
   }
