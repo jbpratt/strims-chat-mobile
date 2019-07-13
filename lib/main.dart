@@ -24,6 +24,15 @@ final AppBar kAppBar = new AppBar(
       Container(padding: const EdgeInsets.all(8.0), child: Text('Strims'))
     ],
   ),
+  actions: <Widget>[
+    IconButton(
+        icon: Icon(Icons.person),
+        onPressed: () async {
+          await inAppBrowser.open(url: "https://strims.gg/login", options: {
+            "useShouldOverrideUrlLoading": true,
+          });
+        }),
+  ],
 );
 
 Browser inAppBrowser = new Browser();
@@ -35,7 +44,7 @@ class App extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: Colors.grey[900],
+        primaryColor: Colors.grey[999],
         accentColor: Colors.orange[500],
       ),
       home: new ChatPage(),
@@ -166,6 +175,10 @@ class _ChatPageState extends State<ChatPage> {
         Message m = new Message.fromJson(type, json.decode(data));
         setState(() => list.add(m));
         break;
+      case "PRIVMSG":
+        Message m = new Message.fromJson(type, json.decode(data));
+        setState(() => list.add(m));
+        break;
       case "JOIN":
         //Chatter c = new Chatter.fromJson(json.decode(data));
         print("JOIN : " + data);
@@ -193,7 +206,6 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-
     String label = determineLabel();
 
     return Scaffold(
@@ -239,13 +251,10 @@ class _ChatPageState extends State<ChatPage> {
               ),
               RaisedButton(
                 onPressed: () {
-                  if (kUser == null || kUser.jwt.isEmpty || kUser.jwt == null) {
-                    // TODO: not logged in dialog
-                  }
                   kUser.nick = "";
                   kUser.jwt = "";
                   kUser = null;
-                  
+
                   resetChannel();
                   // reset conn
                   Navigator.of(context).pop();
@@ -258,19 +267,38 @@ class _ChatPageState extends State<ChatPage> {
             ],
           ),
         ),
+        backgroundColor: Colors.black,
         body: Column(children: <Widget>[
           Container(
-            child: Form(
-              child: new TextFormField(
-                decoration: new InputDecoration(
-                  labelText: label,
-                  fillColor: Colors.grey[900],
-                  filled: true,
-                ),
-                controller: controller,
-                onFieldSubmitted: sendDataKeyboard,
-              ),
+            padding: EdgeInsets.symmetric(
+              vertical: 5.0,
+              horizontal: 5.0,
             ),
+            color: Colors.grey[900],
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  Form(
+                      child: new Flexible(
+                    child: new TextFormField(
+                      decoration: new InputDecoration(
+                        labelText: label,
+                        fillColor: Colors.black,
+                        filled: true,
+                      ),
+                      controller: controller,
+                      onFieldSubmitted: sendDataKeyboard,
+                    ),
+                  )),
+                  ButtonTheme(
+                    minWidth: 20.0,
+                    buttonColor: Colors.transparent,
+                    child: RaisedButton(
+                      onPressed: () {},
+                      child: Icon(Icons.mood),
+                    ),
+                  ),
+                ]),
           ),
           Expanded(
             child: ListView(children: <Widget>[MessageList(list)]),

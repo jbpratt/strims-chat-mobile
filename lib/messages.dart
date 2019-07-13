@@ -16,24 +16,39 @@ class MessageList extends StatelessWidget {
       controller: _controller,
       itemCount: _messages.length,
       itemBuilder: (BuildContext ctx, int index) {
-        var msg = _messages[index];
+        Message msg = _messages[index];
 
         var output = <InlineSpan>[];
+
+        Paint paint = Paint()
+          ..color = Colors.grey[900]
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = 1.0;
+
+        var ts = TextSpan(
+            text: msg.readTimestamp() + " ",
+            style: TextStyle(color: Colors.grey[700]));
+
+        output.add(ts);
+
+        var nick =
+            TextSpan(text: msg.nick + ": ", style: TextStyle(background: paint));
+        output.add(nick);
 
         msg.data.forEach((val) {
           // if type text, render text text span
           // if type emote, render img span
           // output.add(x);
-
           switch (val.type) {
             case "text":
-              var x = TextSpan(
+              TextSpan x = TextSpan(
                   text: val.data.toString(),
                   style: TextStyle(color: Colors.grey[400]));
               output.add(x);
               break;
             case "emote":
-              var x = Image(
+              Image x = Image(
                 image: AssetImage('assets/${val.data}.png'), // not the best way
               );
               output.add(WidgetSpan(child: x));
@@ -42,22 +57,16 @@ class MessageList extends StatelessWidget {
               print(val.type);
           }
         });
-        var nick = TextSpan(
-            text: "\n" + msg.readTimestamp() + " " + msg.nick,
-            style: TextStyle(color: Colors.grey[600]));
-        output.add(nick);
-        // var lt = ListTile(
-        //   subtitle: Text(msg.readTimestamp() + " " + msg.nick,
-        //       style: TextStyle(
-        //         color: Colors.grey[600],
-        //       )),
-        // );
-        return Card(
-          color: Colors.grey[900],
-          child: Text.rich(TextSpan(
-              children:
-                  output)), //_MessageListItem(_messages[index]), // WidgetSpan()
-        );
+
+        Color c;
+        switch (msg.type) {
+          case "PRIVMSG":
+            c = Colors.grey[800];
+            break;
+          default:
+            c = Colors.transparent;
+        }
+        return Card(color: c, child: Text.rich(TextSpan(children: output)));
       },
     );
   }
@@ -65,20 +74,20 @@ class MessageList extends StatelessWidget {
 
 // can be deleted, i like the styling of
 // the listtile tho
-class _MessageListItem extends ListTile {
-  _MessageListItem(Message msg)
-      : super(
-            dense: true,
-            title: Text(msg.data.toString(),
-                style: TextStyle(
-                  color: Colors.grey[400],
-                )),
-            subtitle: Text(msg.readTimestamp() + " " + msg.nick,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                )),
-            onTap: () {});
-}
+// class _MessageListItem extends ListTile {
+//   _MessageListItem(Message msg)
+//       : super(
+//             dense: true,
+//             title: Text(msg.data.toString(),
+//                 style: TextStyle(
+//                   color: Colors.grey[400],
+//                 )),
+//             subtitle: Text(msg.readTimestamp() + " " + msg.nick,
+//                 style: TextStyle(
+//                   color: Colors.grey[600],
+//                 )),
+//             onTap: () {});
+// }
 
 class Message {
   String type;
@@ -115,31 +124,31 @@ class Message {
       return -1;
     }
 
-    List<MessageSegment> _tokenizeCode(String str) {
-      List<MessageSegment> returnList = new List<MessageSegment>();
-      int indexOne = _findNextTick(str);
-      if (indexOne != -1) {
-        String beforeFirstTick = str.substring(0, indexOne);
-        String afterFirstTick = str.substring(indexOne + 1);
-        int indexTwo = _findNextTick(afterFirstTick);
-        if (indexTwo != -1) {
-          String betweenTicks = afterFirstTick.substring(0, indexTwo);
-          String afterSecondTick = afterFirstTick.substring(indexTwo + 1);
-          returnList = (beforeFirstTick.length > 0)
-              ? returnList = [
-                  new MessageSegment('text', beforeFirstTick),
-                  new MessageSegment('code', betweenTicks)
-                ]
-              : returnList = [new MessageSegment('code', betweenTicks)];
-          if (afterSecondTick.length > 0) {
-            returnList.addAll(_tokenizeCode(afterSecondTick));
-          }
-        }
-      } else {
-        returnList.add(new MessageSegment('text', str));
-      }
-      return returnList;
-    }
+    // List<MessageSegment> _tokenizeCode(String str) {
+    //   List<MessageSegment> returnList = new List<MessageSegment>();
+    //   int indexOne = _findNextTick(str);
+    //   if (indexOne != -1) {
+    //     String beforeFirstTick = str.substring(0, indexOne);
+    //     String afterFirstTick = str.substring(indexOne + 1);
+    //     int indexTwo = _findNextTick(afterFirstTick);
+    //     if (indexTwo != -1) {
+    //       String betweenTicks = afterFirstTick.substring(0, indexTwo);
+    //       String afterSecondTick = afterick.substring(indexTwo + 1);
+    //       returnList = (beforeFirstTick.length > 0)
+    //           ? returnList = [
+    //               new MessageSegment('text', beforeFirstTick),
+    //               new MessageSegment('code', betweenTicks)
+    //             ]
+    //           : returnList = [new MessageSegment('code', betweenTicks)];
+    //       if (afterSecondTick.length > 0) {
+    //         returnList.addAll(_tokenizeCode(afterSecondTick));
+    //       }
+    //     }
+    //   } else {
+    //     returnList.add(new MessageSegment('text', str));
+    //   }
+    //   return returnList;
+    // }
 
     List<MessageSegment> _tokenizeSpoiler(String str) {
       List<MessageSegment> returnList = new List<MessageSegment>();
@@ -156,7 +165,8 @@ class Message {
             returnList.add(new MessageSegment('text',
                 str.substring(0, indexOne) + str.substring(0, indexOne)));
             returnList.add(new MessageSegment('spoiler', betweenTags));
-            returnList.addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
+            returnList
+                .addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
           }
         }
       } else {
@@ -196,13 +206,15 @@ class Message {
 
     List<MessageSegment> _tokenizeLinks(String str) {
       List<MessageSegment> returnList = new List<MessageSegment>();
-      RegExp reg = new RegExp(r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
+      RegExp reg = new RegExp(
+          r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
       Iterable<RegExpMatch> matches = reg.allMatches(str);
       List<String> withoutUrls = str.split(reg);
       for (var i = 0; i < withoutUrls.length; i++) {
         returnList.add(new MessageSegment('text', withoutUrls[i]));
         if (matches.length > i) {
-          returnList.add(new MessageSegment('url', matches.elementAt(i).group(0)));
+          returnList
+              .add(new MessageSegment('url', matches.elementAt(i).group(0)));
         }
       }
     }
@@ -226,9 +238,17 @@ class MessageSegment {
   String toString() {
     String segs;
     for (MessageSegment segment in subSegemnts) {
-      segs += "\n"+segment.toString();
+      segs += "\n" + segment.toString();
     }
-    return "{ type: \"" + type + "\", data: \"" + data + "modifier: \"" + modifier +"segments: \"" + segs + "}";
+    return "{ type: \"" +
+        type +
+        "\", data: \"" +
+        data +
+        "modifier: \"" +
+        modifier +
+        "segments: \"" +
+        segs +
+        "}";
   }
 
   String getData() {
