@@ -20,21 +20,24 @@ class MessageList extends StatelessWidget {
 
         var output = <InlineSpan>[];
 
-<<<<<<< HEAD
-        Paint paint = Paint()
-          ..color = Colors.grey[900]
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round
-          ..strokeWidth = 1.0;
-
         var ts = TextSpan(
             text: msg.readTimestamp() + " ",
-            style: TextStyle(color: Colors.grey[700]));
+            style: TextStyle(color: Colors.blueGrey[700]));
 
         output.add(ts);
 
-        var nick =
-            TextSpan(text: msg.nick + ": ", style: TextStyle(background: paint));
+        var nick;
+        switch (msg.type) {
+          case "PRIVMSG":
+            nick = TextSpan(
+                text: msg.nick + " whispered: ",
+                style: TextStyle(background: Paint()..color = Colors.blue[400]));
+            break;
+          default:
+            nick = TextSpan(
+                text: msg.nick + ": ", style: TextStyle(background: Paint()..color = Colors.grey[900]));
+        }
+
         output.add(nick);
 
         msg.data.forEach((val) {
@@ -59,58 +62,13 @@ class MessageList extends StatelessWidget {
           }
         });
 
-        Color c;
-        switch (msg.type) {
-          case "PRIVMSG":
-            c = Colors.grey[800];
-            break;
-          default:
-            c = Colors.transparent;
-        }
-        return Card(color: c, child: Text.rich(TextSpan(children: output)));
-=======
-        var x = TextSpan(
-            text: msg.data.toString(),
-            style: TextStyle(color: Colors.grey[400]));
-        output.add(x);
-        var nick = TextSpan(
-            text: "\n" + msg.readTimestamp() + " " + msg.nick,
-            style: TextStyle(color: Colors.grey[600]));
-        output.add(nick);
-        // var lt = ListTile(
-        //   subtitle: Text(msg.readTimestamp() + " " + msg.nick,
-        //       style: TextStyle(
-        //         color: Colors.grey[600],
-        //       )),
-        // );
         return Card(
-          color: Colors.grey[900],
-          child: Text.rich(TextSpan(
-              children:
-                  output)), //_MessageListItem(_messages[index]), // WidgetSpan()
-        );
->>>>>>> 61be71cb704203205e7ac4afebf04c7342292a26
+            color: Colors.transparent,
+            child: Text.rich(TextSpan(children: output)));
       },
     );
   }
 }
-
-// can be deleted, i like the styling of
-// the listtile tho
-// class _MessageListItem extends ListTile {
-//   _MessageListItem(Message msg)
-//       : super(
-//             dense: true,
-//             title: Text(msg.data.toString(),
-//                 style: TextStyle(
-//                   color: Colors.grey[400],
-//                 )),
-//             subtitle: Text(msg.readTimestamp() + " " + msg.nick,
-//                 style: TextStyle(
-//                   color: Colors.grey[600],
-//                 )),
-//             onTap: () {});
-// }
 
 class Message {
   String type;
@@ -147,33 +105,6 @@ class Message {
       return -1;
     }
 
-<<<<<<< HEAD
-    // List<MessageSegment> _tokenizeCode(String str) {
-    //   List<MessageSegment> returnList = new List<MessageSegment>();
-    //   int indexOne = _findNextTick(str);
-    //   if (indexOne != -1) {
-    //     String beforeFirstTick = str.substring(0, indexOne);
-    //     String afterFirstTick = str.substring(indexOne + 1);
-    //     int indexTwo = _findNextTick(afterFirstTick);
-    //     if (indexTwo != -1) {
-    //       String betweenTicks = afterFirstTick.substring(0, indexTwo);
-    //       String afterSecondTick = afterick.substring(indexTwo + 1);
-    //       returnList = (beforeFirstTick.length > 0)
-    //           ? returnList = [
-    //               new MessageSegment('text', beforeFirstTick),
-    //               new MessageSegment('code', betweenTicks)
-    //             ]
-    //           : returnList = [new MessageSegment('code', betweenTicks)];
-    //       if (afterSecondTick.length > 0) {
-    //         returnList.addAll(_tokenizeCode(afterSecondTick));
-    //       }
-    //     }
-    //   } else {
-    //     returnList.add(new MessageSegment('text', str));
-    //   }
-    //   return returnList;
-    // }
-=======
     List<MessageSegment> _tokenizeCode(String str) {
       List<MessageSegment> returnList = new List<MessageSegment>();
       int indexOne = _findNextTick(str);
@@ -197,7 +128,6 @@ class Message {
       }
       return returnList;
     }
->>>>>>> 61be71cb704203205e7ac4afebf04c7342292a26
 
     _recursiveCode(MessageSegment base) {
       if (base.type == 'text' && base.subSegemnts == null) {
@@ -242,24 +172,11 @@ class Message {
             returnList.add(new MessageSegment(
                 'text', str.substring(0, indexOne) + '||||'));
           } else {
-<<<<<<< HEAD
             returnList.add(new MessageSegment('text',
                 str.substring(0, indexOne) + str.substring(0, indexOne)));
             returnList.add(new MessageSegment('spoiler', betweenTags));
             returnList
                 .addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
-=======
-            if (str.substring(0, indexOne).length > 0) {
-              returnList
-                  .add(new MessageSegment('text', str.substring(0, indexOne)));
-            }
-            returnList.add(
-                new MessageSegment('text', betweenTags, modifier: 'spoiler'));
-            if (afterTag.substring(indexTwo + 2).length > 0) {
-              returnList
-                  .addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
-            }
->>>>>>> 61be71cb704203205e7ac4afebf04c7342292a26
           }
         }
       } else {
@@ -310,7 +227,6 @@ class Message {
       }
     }
 
-<<<<<<< HEAD
     List<MessageSegment> _tokenizeLinks(String str) {
       List<MessageSegment> returnList = new List<MessageSegment>();
       RegExp reg = new RegExp(
@@ -322,32 +238,6 @@ class Message {
         if (matches.length > i) {
           returnList
               .add(new MessageSegment('url', matches.elementAt(i).group(0)));
-=======
-    // recursively tokenize text
-    _tokenizeLinks(MessageSegment base) {
-      if (base.type == 'text' && base.subSegemnts == null) {
-        RegExp reg = new RegExp(
-            r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
-        List<MessageSegment> newSegments = new List<MessageSegment>();
-        Iterable<RegExpMatch> matches = reg.allMatches(base.data);
-        if (matches.length > 0) {
-          List<String> withoutUrls = base.data.split(reg);
-          for (var i = 0; i < withoutUrls.length; i++) {
-            if (withoutUrls[i].length > 0) {
-              newSegments.add(new MessageSegment('text', withoutUrls[i]));
-            }
-            if (matches.length > i) {
-              newSegments.add(
-                  new MessageSegment('url', matches.elementAt(i).group(0)));
-            }
-          }
-          base.subSegemnts = newSegments;
-          base.data = "";
-        }
-      } else if (base.subSegemnts != null) {
-        for (MessageSegment segment in base.subSegemnts) {
-          _tokenizeLinks(segment);
->>>>>>> 61be71cb704203205e7ac4afebf04c7342292a26
         }
       }
     }
@@ -361,7 +251,7 @@ class Message {
       base.subSegemnts = tmp;
       _recursiveCode(base);
       _tokenizeGreentext(base);
-      _tokenizeLinks(base);
+      //_tokenizeLinks(base);
       _tokenizeEmotes(base);
 
       return base;
@@ -385,21 +275,6 @@ class MessageSegment {
 
   @override
   String toString() {
-<<<<<<< HEAD
-    String segs;
-    for (MessageSegment segment in subSegemnts) {
-      segs += "\n" + segment.toString();
-    }
-    return "{ type: \"" +
-        type +
-        "\", data: \"" +
-        data +
-        "modifier: \"" +
-        modifier +
-        "segments: \"" +
-        segs +
-        "}";
-=======
     return toStringIndent(1);
   }
 
@@ -415,7 +290,6 @@ class MessageSegment {
     String newline =
         (segs.length > 0) ? '\n' + segs + '  ' * depth + ']}' : ']}';
     return '{type: ' + type + mod + dataS + ', children: [' + newline;
->>>>>>> 61be71cb704203205e7ac4afebf04c7342292a26
   }
 
   String getData() {
