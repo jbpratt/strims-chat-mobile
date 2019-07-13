@@ -20,28 +20,10 @@ class MessageList extends StatelessWidget {
 
         var output = <InlineSpan>[];
 
-        msg.data.forEach((val) {
-          // if type text, render text text span
-          // if type emote, render img span
-          // output.add(x);
-
-          switch (val.type) {
-            case "text":
-              var x = TextSpan(
-                  text: val.data.toString(),
-                  style: TextStyle(color: Colors.grey[400]));
-              output.add(x);
-              break;
-            case "emote":
-              var x = Image(
-                image: AssetImage('assets/${val.data}.png'), // not the best way
-              );
-              output.add(WidgetSpan(child: x));
-              break;
-            default:
-              print(val.type);
-          }
-        });
+        var x = TextSpan(
+            text: msg.data.toString(),
+            style: TextStyle(color: Colors.grey[400]));
+        output.add(x);
         var nick = TextSpan(
             text: "\n" + msg.readTimestamp() + " " + msg.nick,
             style: TextStyle(color: Colors.grey[600]));
@@ -84,7 +66,7 @@ class Message {
   String type;
   String nick;
   int timestamp;
-  List<MessageSegment> data;
+  MessageSegment data;
 
   Message({this.type, this.nick, this.timestamp, this.data});
 
@@ -105,7 +87,7 @@ class Message {
         var index = str.indexOf('`');
         if (index == -1) {
           return -1;
-        } else if (str[(index - 1)] == '\\') {
+        } else if (index - 1 >= 0 && str[(index - 1)] == '\\') {
           base += index + 1;
           str = str.substring(index + 1);
         } else {
@@ -125,12 +107,10 @@ class Message {
         if (indexTwo != -1) {
           String betweenTicks = afterFirstTick.substring(0, indexTwo);
           String afterSecondTick = afterFirstTick.substring(indexTwo + 1);
-          returnList = (beforeFirstTick.length > 0)
-              ? returnList = [
-                  new MessageSegment('text', beforeFirstTick),
-                  new MessageSegment('code', betweenTicks)
-                ]
-              : returnList = [new MessageSegment('code', betweenTicks)];
+          if (beforeFirstTick.length > 0) {
+            returnList.add(new MessageSegment('text', beforeFirstTick));
+          }
+          returnList.add(new MessageSegment('code', betweenTicks));
           if (afterSecondTick.length > 0) {
             returnList.addAll(_tokenizeCode(afterSecondTick));
           }
@@ -139,6 +119,37 @@ class Message {
         returnList.add(new MessageSegment('text', str));
       }
       return returnList;
+    }
+
+    _recursiveCode(MessageSegment base) {
+      if (base.type == 'text' && base.subSegemnts == null) {
+        base.subSegemnts = _tokenizeCode(base.data);
+        base.data = '';
+      } else if (base.subSegemnts != null) {
+        for (MessageSegment segment in base.subSegemnts) {
+          _recursiveCode(segment);
+        }
+      }
+    }
+
+    _tokenizeGreentext(MessageSegment base) {
+      if (base.type == "text" && base.subSegemnts == null) {
+        RegExp greenReg = new RegExp(r'^\s*>.*$');
+        if (greenReg.hasMatch(base.data)) {
+          base.modifier = 'green';
+        }
+      } else if (base.subSegemnts != null) {
+        for (MessageSegment segment in base.subSegemnts) {
+          _tokenizeGreentext(segment);
+        }
+      }
+    }
+
+    MessageSegment _tokenizeSelf(String str) {
+      if (str.substring(0, 3) == '/me') {
+        return new MessageSegment('self', str.substring(3));
+      }
+      return new MessageSegment('regular', str);
     }
 
     List<MessageSegment> _tokenizeSpoiler(String str) {
@@ -153,10 +164,16 @@ class Message {
             returnList.add(new MessageSegment(
                 'text', str.substring(0, indexOne) + '||||'));
           } else {
-            returnList.add(new MessageSegment('text',
-                str.substring(0, indexOne) + str.substring(0, indexOne)));
-            returnList.add(new MessageSegment('spoiler', betweenTags));
-            returnList.addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
+            if (str.substring(0, indexOne).length > 0) {
+              returnList
+                  .add(new MessageSegment('text', str.substring(0, indexOne)));
+            }
+            returnList.add(
+                new MessageSegment('text', betweenTags, modifier: 'spoiler'));
+            if (afterTag.substring(indexTwo + 2).length > 0) {
+              returnList
+                  .addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
+            }
           }
         }
       } else {
@@ -165,49 +182,93 @@ class Message {
       return returnList;
     }
 
-    List<MessageSegment> _tokenizeEmotes(String data) {
+    _tokenizeEmotes(MessageSegment base) {
       List<MessageSegment> returnList = new List<MessageSegment>();
       String tmpBuffer = "";
-
-      for (String segment in data.split(" ")) {
-        List<String> colonSplit = segment.split(":");
-        if (colonSplit.length == 1 && kEmotes.containsKey(segment)) {
+      bool foundEmote = false;
+      if (base.type == 'text' && base.subSegemnts == null) {
+        for (String segment in base.data.split(" ")) {
+          List<String> colonSplit = segment.split(":");
+          if (colonSplit.length == 1 && kEmotes.containsKey(segment)) {
+            foundEmote = true;
+            if (tmpBuffer.length > 0) {
+              returnList.add(new MessageSegment("text", tmpBuffer + " "));
+            }
+            tmpBuffer = "";
+            returnList.add(new MessageSegment("emote", segment));
+          } else if (colonSplit.length == 2 &&
+              kEmotes.containsKey(colonSplit[0]) &&
+              kEmoteModifiers.contains(colonSplit[1])) {
+            foundEmote = true;
+            if (tmpBuffer.length > 0) {
+              returnList.add(new MessageSegment("text", tmpBuffer + " "));
+            }
+            tmpBuffer = "";
+            returnList.add(new MessageSegment("emote", colonSplit[0],
+                modifier: colonSplit[1]));
+          } else {
+            tmpBuffer += " " + segment;
+          }
+        }
+        if (tmpBuffer.length > 0) {
           returnList.add(new MessageSegment("text", tmpBuffer + " "));
-          tmpBuffer = "";
-          returnList.add(new MessageSegment("emote", segment));
-        } else if (colonSplit.length == 2 &&
-            kEmotes.containsKey(colonSplit[0]) &&
-            kEmoteModifiers.contains(colonSplit[1])) {
-          returnList.add(new MessageSegment("text", tmpBuffer + " "));
-          tmpBuffer = "";
-          returnList.add(new MessageSegment("emote", colonSplit[0],
-              modifier: colonSplit[1]));
-        } else {
-          tmpBuffer += " " + segment;
+        }
+        if (foundEmote) {
+          base.data = "";
+          base.subSegemnts = returnList;
+        }
+      } else if (base.subSegemnts != null) {
+        for (MessageSegment segment in base.subSegemnts) {
+          _tokenizeEmotes(segment);
         }
       }
-
-      if (tmpBuffer != "") {
-        returnList.add(new MessageSegment("text", tmpBuffer + " "));
-      }
-
-      return returnList;
     }
 
-    List<MessageSegment> _tokenizeLinks(String str) {
-      List<MessageSegment> returnList = new List<MessageSegment>();
-      RegExp reg = new RegExp(r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
-      Iterable<RegExpMatch> matches = reg.allMatches(str);
-      List<String> withoutUrls = str.split(reg);
-      for (var i = 0; i < withoutUrls.length; i++) {
-        returnList.add(new MessageSegment('text', withoutUrls[i]));
-        if (matches.length > i) {
-          returnList.add(new MessageSegment('url', matches.elementAt(i).group(0)));
+    // recursively tokenize text
+    _tokenizeLinks(MessageSegment base) {
+      if (base.type == 'text' && base.subSegemnts == null) {
+        RegExp reg = new RegExp(
+            r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
+        List<MessageSegment> newSegments = new List<MessageSegment>();
+        Iterable<RegExpMatch> matches = reg.allMatches(base.data);
+        if (matches.length > 0) {
+          List<String> withoutUrls = base.data.split(reg);
+          for (var i = 0; i < withoutUrls.length; i++) {
+            if (withoutUrls[i].length > 0) {
+              newSegments.add(new MessageSegment('text', withoutUrls[i]));
+            }
+            if (matches.length > i) {
+              newSegments.add(
+                  new MessageSegment('url', matches.elementAt(i).group(0)));
+            }
+          }
+          base.subSegemnts = newSegments;
+          base.data = "";
+        }
+      } else if (base.subSegemnts != null) {
+        for (MessageSegment segment in base.subSegemnts) {
+          _tokenizeLinks(segment);
         }
       }
     }
 
-    List<MessageSegment> message = _tokenizeEmotes(parsedJson['data']);
+    MessageSegment _tokenizeMessage(String message) {
+      // get /me
+      MessageSegment base = _tokenizeSelf(message);
+      // get spoiler blocks
+      List<MessageSegment> tmp = _tokenizeSpoiler(base.data);
+      base.data = '';
+      base.subSegemnts = tmp;
+      _recursiveCode(base);
+      _tokenizeGreentext(base);
+      _tokenizeLinks(base);
+      _tokenizeEmotes(base);
+
+      return base;
+    }
+
+    print(parsedJson['data']);
+    MessageSegment message = _tokenizeMessage(parsedJson['data']);
     return Message(
         type: type,
         nick: parsedJson['nick'],
@@ -224,11 +285,21 @@ class MessageSegment {
 
   @override
   String toString() {
-    String segs;
-    for (MessageSegment segment in subSegemnts) {
-      segs += "\n"+segment.toString();
+    return toStringIndent(1);
+  }
+
+  String toStringIndent(int depth) {
+    String segs = '';
+    if (subSegemnts != null) {
+      for (MessageSegment segment in subSegemnts) {
+        segs += '  ' * depth + segment.toStringIndent(depth + 1) + '\n';
+      }
     }
-    return "{ type: \"" + type + "\", data: \"" + data + "modifier: \"" + modifier +"segments: \"" + segs + "}";
+    String dataS = (data.length > 0) ? ', data: ' + data : '';
+    String mod = (modifier != null) ? ', mod: ' + modifier : '';
+    String newline =
+        (segs.length > 0) ? '\n' + segs + '  ' * depth + ']}' : ']}';
+    return '{type: ' + type + mod + dataS + ', children: [' + newline;
   }
 
   String getData() {
