@@ -49,6 +49,7 @@ class MessageList extends StatelessWidget {
             // if type text, render text text span
             // if type emote, render img span
             // output.add(x);
+            print(val.toString());
             switch (val.type) {
               case "text":
                 TextSpan x = TextSpan(
@@ -62,6 +63,18 @@ class MessageList extends StatelessWidget {
                       AssetImage('assets/${val.data}.png'), // not the best way
                 );
                 output.add(WidgetSpan(child: x));
+                break;
+              case "url":
+                TextSpan x = TextSpan(
+                    text: val.data.toString(),
+                    style: TextStyle(color: Colors.blue[400]));
+                output.add(x);
+                break;
+              case "code":
+                TextSpan x = TextSpan(
+                    text: val.data.toString(),
+                    style: TextStyle(color: Colors.grey[400]));
+                output.add(x);
                 break;
               default:
                 TextSpan x = TextSpan(
@@ -165,7 +178,7 @@ class Message {
     }
 
     MessageSegment _tokenizeSelf(String str) {
-      if (str.substring(0, 3) == '/me') {
+      if (str.length >= 3 && str.substring(0, 3) == '/me') {
         return new MessageSegment('self', str.substring(3));
       }
       return new MessageSegment('regular', str);
@@ -238,17 +251,29 @@ class Message {
       }
     }
 
-    List<MessageSegment> _tokenizeLinks(String str) {
-      List<MessageSegment> returnList = new List<MessageSegment>();
-      RegExp reg = new RegExp(
-          r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
-      Iterable<RegExpMatch> matches = reg.allMatches(str);
-      List<String> withoutUrls = str.split(reg);
-      for (var i = 0; i < withoutUrls.length; i++) {
-        returnList.add(new MessageSegment('text', withoutUrls[i]));
-        if (matches.length > i) {
-          returnList
-              .add(new MessageSegment('url', matches.elementAt(i).group(0)));
+    _tokenizeLinks(MessageSegment base) {
+      if (base.type == 'text' && base.subSegemnts == null) {
+        RegExp reg = new RegExp(
+            r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
+        List<MessageSegment> newSegments = new List<MessageSegment>();
+        Iterable<RegExpMatch> matches = reg.allMatches(base.data);
+        if (matches.length > 0) {
+          List<String> withoutUrls = base.data.split(reg);
+          for (var i = 0; i < withoutUrls.length; i++) {
+            if (withoutUrls[i].length > 0) {
+              newSegments.add(new MessageSegment('text', withoutUrls[i]));
+            }
+            if (matches.length > i) {
+              newSegments.add(
+                  new MessageSegment('url', matches.elementAt(i).group(0)));
+            }
+          }
+          base.subSegemnts = newSegments;
+          base.data = "";
+        }
+      } else if (base.subSegemnts != null) {
+        for (MessageSegment segment in base.subSegemnts) {
+          _tokenizeLinks(segment);
         }
       }
     }
@@ -288,7 +313,7 @@ class Message {
       base.subSegemnts = tmp;
       _recursiveCode(base);
       _tokenizeGreentext(base);
-      //_tokenizeLinks(base);
+      _tokenizeLinks(base);
       _tokenizeEmotes(base);
       _flattenTree(base);
 
