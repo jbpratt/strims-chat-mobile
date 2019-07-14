@@ -58,9 +58,10 @@ class MessageList extends StatelessWidget {
                 output.add(x);
                 break;
               case "emote":
+                AssetImage img = AssetImage('assets/${val.data}');
                 Image x = Image(
-                  image:
-                      AssetImage('assets/${val.data}.png'), // not the best way
+                  image: img,
+                  height: 32,
                 );
                 output.add(WidgetSpan(child: x));
                 break;
