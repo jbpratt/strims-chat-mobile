@@ -1,10 +1,6 @@
-import 'dart:convert';
 import 'package:flutter_inappbrowser/flutter_inappbrowser.dart';
-import 'package:http/http.dart';
-import 'package:majora/user.dart';
 
 class Browser extends InAppBrowser {
-  User kUser = new User();
   @override
   void onBrowserCreated() async {
     print("\n\nBrowser Ready!\n\n");
@@ -15,15 +11,11 @@ class Browser extends InAppBrowser {
 
   @override
   Future onLoadStop(String url) async {
-    var x = (await CookieManager.getCookie("https://chat.strims.gg", "jwt")
-        .then((y) {
-      kUser.jwt = y['value'];
-      // TODO: add to storage
-    }));
+    print("\nloading stopped\n");
   }
 
-  User getNewUser() {
-    return kUser;
+  Future<Map<String, dynamic>> getCookie(String name) async {
+    return await CookieManager.getCookie("https://chat.strims.gg", name);
   }
 
   @override
@@ -32,8 +24,7 @@ class Browser extends InAppBrowser {
   }
 
   @override
-  Future onExit() async {
-    getUsername();
+  void onExit() async {
     print("\n\nBrowser closed!\n\n");
   }
 
@@ -48,17 +39,4 @@ class Browser extends InAppBrowser {
 
   @override
   void onConsoleMessage(ConsoleMessage consoleMessage) {}
-
-  Future<String> getUsername() async {
-    var header = new Map<String, String>();
-    header['Cookie'] = 'jwt=${kUser.jwt}';
-    Response response =
-        await get("https://strims.gg/api/profile", headers: header);
-    if (response.statusCode == 200) {
-      var jsonResponse = jsonDecode(response.body);
-      return jsonResponse['username'].toString();
-    } else {
-      print("Request failed with status: ${response.statusCode}.");
-    }
-  }
 }

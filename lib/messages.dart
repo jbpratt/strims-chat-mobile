@@ -106,7 +106,15 @@ class Message {
     if (this.timestamp != 0) {
       DateTime d =
           new DateTime.fromMillisecondsSinceEpoch(this.timestamp, isUtc: true);
-      return d.hour.toString() + ":" + d.minute.toString();
+          String hour = d.hour.toString(); 
+          String minute = d.minute.toString();
+          if  (hour.length == 1) {
+            hour = "0" + hour;
+          }
+          if  (minute.length == 1) {
+            minute = "0" + minute;
+          }
+      return  "$hour:$minute";
     }
     return "";
   }
