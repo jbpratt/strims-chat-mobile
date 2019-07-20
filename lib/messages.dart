@@ -49,7 +49,6 @@ class MessageList extends StatelessWidget {
             // if type text, render text text span
             // if type emote, render img span
             // output.add(x);
-            print(val.toString());
             switch (val.type) {
               case "text":
                 TextSpan x = TextSpan(
@@ -321,7 +320,6 @@ class Message {
       return base;
     }
 
-    print(parsedJson['data']);
     MessageSegment message = _tokenizeMessage(parsedJson['data']);
     return Message(
         type: type,

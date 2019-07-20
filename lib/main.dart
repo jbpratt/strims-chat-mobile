@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:majora/browser.dart';
 import 'package:majora/emotes.dart';
 import 'package:majora/messages.dart';
 import 'package:majora/user.dart';
 import 'package:majora/wsclient.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 User kUser = new User();
 
@@ -52,6 +54,13 @@ class App extends StatelessWidget {
   }
 }
 
+class _Setting {
+  final String key;
+  final String value;
+
+  _Setting(this.key, this.value);
+}
+
 class ChatPage extends StatefulWidget {
   @override
   _ChatPageState createState() => _ChatPageState();
@@ -64,19 +73,18 @@ class _ChatPageState extends State<ChatPage> {
   List<InlineSpan> output = [];
   List<Chatter> chatters = [];
   Future<Map<String, Emote>> emotes;
+  final _storage = new FlutterSecureStorage();
+  List<_Setting> _settings = [];
 
   void infoMsg(String msg) {
     Message m = new Message(
-        type: "MSG",
-        nick: "",
-        data: MessageSegment("text", msg),
-        timestamp: 0);
+        type: "MSG", nick: "", data: MessageSegment("text", msg), timestamp: 0);
     setState(() => list.add(m));
   }
 
   void listen() {
     infoMsg("Connecting to chat.strims.gg ...");
-    var channel = ws.dial();
+    WebSocketChannel channel = ws.dial();
     infoMsg("Connection established");
     ws.channel = channel;
     ws.channel.stream.listen((onData) {
@@ -94,22 +102,64 @@ class _ChatPageState extends State<ChatPage> {
 
   void resetChannel() {
     ws.channel.sink.close();
+    infoMsg("reconnecting...");
+    listen();
+  }
 
+  void resetOnBrowserClose() {
     kUser = inAppBrowser.getNewUser();
 
     updateToken();
 
-    infoMsg("reconnecting...");
-    listen();
+    _addSetting('jwt', kUser.jwt);
+    _addSetting('nick', kUser.nick);
+
+    resetChannel();
   }
 
   Future<void> getAllEmotes() async {
     kEmotes = await getEmotes();
   }
 
+  Future<void> _loadSettings() async {
+    final all = await _storage.readAll();
+    setState(() {
+      return _settings = all.keys
+          .map((key) => new _Setting(key, all[key]))
+          .toList(growable: false);
+    });
+  }
+
+  void _deleteAll() async {
+    await _storage.deleteAll();
+    _loadSettings();
+  }
+
+  void _addSetting(String key, String value) async {
+    _deleteSetting(key);
+    await _storage.write(key: key, value: value);
+    _loadSettings();
+  }
+
+  void _deleteSetting(String key) async {
+    await _storage.delete(key: key);
+    _loadSettings();
+  }
+
+  void _getUsername() async {
+    kUser.nick = await inAppBrowser.getUsername();
+  }
+
   @override
   void initState() {
     super.initState();
+
+    _loadSettings();
+    if (_settings.contains('jwt')) {
+      kUser.jwt = _settings.where((s) => s.key == 'jwt').toString();
+      kUser.nick = _settings.where((s) => s.key == 'nick').toString();
+    }
+
     controller = TextEditingController();
     getAllEmotes();
     listen();
@@ -136,7 +186,7 @@ class _ChatPageState extends State<ChatPage> {
                 child: new Text("Close"),
                 onPressed: () {
                   Navigator.pop(context);
-                  this.resetChannel();
+                  this.resetOnBrowserClose();
                 },
               )
             ],
