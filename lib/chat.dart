@@ -123,11 +123,13 @@ class _ChatPageState extends State<ChatPage> {
         jwt = this.storage.getSetting('jwt');
         nick = this.storage.getSetting('nick');
       }
+    }).then((val) {
+      updateToken();
+      listen();
     });
 
     controller = TextEditingController();
     getAllEmotes();
-    listen();
   }
 
   Future _showLoginDialog() async {
@@ -174,6 +176,7 @@ class _ChatPageState extends State<ChatPage> {
   void handleReceive(String msg) {
     String type = msg.split(new RegExp(r"{[^}]*}"))[0].trim();
     String data = msg.split(new RegExp(r"^[^ ]*"))[1];
+    print(data);
     switch (type) {
       case "NAMES":
         setState(() {
