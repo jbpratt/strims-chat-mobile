@@ -12,7 +12,7 @@ class App extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: Colors.grey[999],
-        accentColor: Colors.orange[500],
+        accentColor: Colors.orange[700],
       ),
       home: new ChatPage(),
     );

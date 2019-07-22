@@ -71,6 +71,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void login() async {
+    // if already logged in then open profile
     await inAppBrowser.open(url: "https://strims.gg/login", options: {
       "useShouldOverrideUrlLoading": true,
     }).then((val) {
@@ -163,6 +164,8 @@ class _ChatPageState extends State<ChatPage> {
       _showLoginDialog();
     }
 
+    // TODO: handle pms
+
     if (controller.text.isNotEmpty) {
       ws.channel.sink.add('MSG {"data":"' + controller.text + '"}');
       controller.text = "";
@@ -176,7 +179,6 @@ class _ChatPageState extends State<ChatPage> {
   void handleReceive(String msg) {
     String type = msg.split(new RegExp(r"{[^}]*}"))[0].trim();
     String data = msg.split(new RegExp(r"^[^ ]*"))[1];
-    print(data);
     switch (type) {
       case "NAMES":
         setState(() {
@@ -237,6 +239,7 @@ class _ChatPageState extends State<ChatPage> {
                   padding: const EdgeInsets.all(8.0), child: Text('Strims'))
             ],
           ),
+          elevation: 0.0,
           actions: <Widget>[
             IconButton(
               icon: Icon(Icons.person),
@@ -327,10 +330,12 @@ class _ChatPageState extends State<ChatPage> {
                   )),
                   ButtonTheme(
                     minWidth: 20.0,
-                    buttonColor: Colors.transparent,
-                    child: RaisedButton(
-                      onPressed: () {},
-                      child: Icon(Icons.mood),
+                    buttonColor: Colors.grey[900],
+                    child: FlatButton(
+                      onPressed: () {
+                        sendData();
+                      },
+                      child: Icon(Icons.send),
                     ),
                   ),
                 ]),
