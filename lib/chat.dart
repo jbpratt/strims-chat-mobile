@@ -26,7 +26,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   TextEditingController controller;
-  List<Message> list = [];
+  List<Message> messages = [];
   WSClient ws = new WSClient(kAddress, token: jwt);
   List<InlineSpan> output = [];
   List<Chatter> chatters = [];
@@ -40,7 +40,7 @@ class _ChatPageState extends State<ChatPage> {
         json.decode(
             '{"nick":"info","features":[],"timestamp":$timestamp,"data":"$msg"}'));
 
-    setState(() => list.add(m));
+    setState(() => messages.add(m));
   }
 
   Future<String> _getUsername(String jwt) async {
@@ -53,20 +53,36 @@ class _ChatPageState extends State<ChatPage> {
       return jsonResponse['username'].toString();
     } else {
       print("Request failed with status: ${response.statusCode}.");
+      return null;
+    }
+  }
+
+  Future<void> _requestChatHistory() async {
+    // TODO: add useragent
+    //var header = new Map<String, String>();
+    Response response = await get("https://chat.strims.gg/api/chat/history");
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(response.body) as List;
+      jsonResponse.forEach((i) => handleReceive(i.toString()));
+    } else {
+      print("Request failed with status: ${response.statusCode}.");
+      return null;
     }
   }
 
   void listen() {
-    infoMsg("Connecting to chat.strims.gg ...");
-    WebSocketChannel channel = ws.dial();
-    infoMsg("Connection established");
-    ws.channel = channel;
-    ws.channel.stream.listen((onData) {
-      if (onData is String) {
-        handleReceive(onData);
-      }
-    }, onError: (error) {
-      print(error.toString());
+    _requestChatHistory().then((onValue) {
+      infoMsg("Connecting to chat.strims.gg ...");
+      WebSocketChannel channel = ws.dial();
+      infoMsg("Connection established");
+      ws.channel = channel;
+      ws.channel.stream.listen((onData) {
+        if (onData is String) {
+          handleReceive(onData);
+        }
+      }, onError: (error) {
+        print(error.toString());
+      });
     });
   }
 
@@ -176,32 +192,41 @@ class _ChatPageState extends State<ChatPage> {
     sendData();
   }
 
+  // First index is type, then data
+  List parseMsg(String msg) {
+    return [
+      msg.split(new RegExp(r"{[^}]*}"))[0].trim(),
+      msg.split(new RegExp(r"^[^ ]*"))[1]
+    ];
+  }
+
   void handleReceive(String msg) {
-    String type = msg.split(new RegExp(r"{[^}]*}"))[0].trim();
-    String data = msg.split(new RegExp(r"^[^ ]*"))[1];
-    switch (type) {
+    var wsResponse = parseMsg(msg);
+    switch (wsResponse[0]) {
       case "NAMES":
         setState(() {
-          chatters.addAll(buildChatterList(data));
+          chatters.addAll(buildChatterList(wsResponse[1]));
         });
-        var count = getConnectionCount(data);
+        var count = getConnectionCount(wsResponse[1]);
         infoMsg(
             'Currently serving $count connections and ${chatters.length} users');
         break;
       case "MSG":
-        Message m = new Message.fromJson(type, json.decode(data));
-        setState(() => list.add(m));
+        Message m =
+            new Message.fromJson(wsResponse[0], json.decode(wsResponse[1]));
+        setState(() => messages.add(m));
         break;
       case "PRIVMSG":
-        Message m = new Message.fromJson(type, json.decode(data));
-        setState(() => list.add(m));
+        Message m =
+            new Message.fromJson(wsResponse[0], json.decode(wsResponse[1]));
+        setState(() => messages.add(m));
         break;
       case "JOIN":
-        //Chatter c = new Chatter.fromJson(json.decode(data));
-        print("JOIN : " + data);
+        //Chatter c = new Chatter.fromJson(json.decode(wsResponse[1]));
+        print("JOIN : " + wsResponse[1]);
         break;
       case "QUIT":
-        print("QUIT : " + data);
+        print("QUIT : " + wsResponse[1]);
         break;
       default:
     }
@@ -341,7 +366,7 @@ class _ChatPageState extends State<ChatPage> {
                 ]),
           ),
           Expanded(
-            child: ListView(children: <Widget>[MessageList(list)]),
+            child: ListView(children: <Widget>[MessageList(messages)]),
           )
         ]));
   }
