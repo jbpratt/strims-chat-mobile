@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:majora/settings.dart';
 import 'package:majora/storage.dart';
 import 'package:majora/wsclient.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -383,13 +384,4 @@ class WhispersRoute extends StatelessWidget {
   }
 }
 
-class SettingsRoute extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text("Settings"),
-        ),
-        body: Column(children: <Widget>[]));
-  }
-}
+
