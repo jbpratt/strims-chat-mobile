@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:majora/emotes.dart';
 
 class MessageList extends StatelessWidget {
@@ -7,6 +9,14 @@ class MessageList extends StatelessWidget {
   final List<Message> _messages;
 
   MessageList(this._messages);
+
+  _launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,8 +76,11 @@ class MessageList extends StatelessWidget {
                 break;
               case "url":
                 TextSpan x = TextSpan(
-                    text: val.data.toString(),
-                    style: TextStyle(color: Colors.blue[400]));
+                  text: val.data.toString(),
+                  style: TextStyle(color: Colors.blue[400]),
+                  recognizer: new TapGestureRecognizer()
+                    ..onTap = () => {_launchURL(val.data.toString())},
+                );
                 output.add(x);
                 break;
               case "code":
@@ -106,15 +119,15 @@ class Message {
     if (this.timestamp != 0) {
       DateTime d =
           new DateTime.fromMillisecondsSinceEpoch(this.timestamp, isUtc: true);
-          String hour = d.hour.toString(); 
-          String minute = d.minute.toString();
-          if  (hour.length == 1) {
-            hour = "0" + hour;
-          }
-          if  (minute.length == 1) {
-            minute = "0" + minute;
-          }
-      return  "$hour:$minute";
+      String hour = d.hour.toString();
+      String minute = d.minute.toString();
+      if (hour.length == 1) {
+        hour = "0" + hour;
+      }
+      if (minute.length == 1) {
+        minute = "0" + minute;
+      }
+      return "$hour:$minute";
     }
     return "";
   }
