@@ -75,9 +75,47 @@ class MessageList extends StatelessWidget {
                 output.add(WidgetSpan(child: x));
                 break;
               case "url":
+                //URL styling // there has to be a better way to do this
+                var styleURL = TextStyle(
+                    color: Colors.blue[400],
+                    decoration: TextDecoration.underline);
+
+                if (val.getLinkModifier != null) {
+                  switch (val.getLinkModifier) {
+                    case "nsfl":
+                      styleURL = TextStyle(
+                          color: Colors.blue[400],
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.yellow[400],
+                          decorationStyle: TextDecorationStyle.dashed);
+                      break;
+                    case "nsfw":
+                      styleURL = TextStyle(
+                          color: Colors.blue[400],
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.red[400],
+                          decorationStyle: TextDecorationStyle.dashed);
+                      break;
+                    case "loud":
+                      styleURL = TextStyle(
+                          color: Colors.blue[400],
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.blue[400],
+                          decorationStyle: TextDecorationStyle.dashed);
+                      break;
+                    case "weeb":
+                      styleURL = TextStyle(
+                          color: Colors.blue[400],
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.purple[400],
+                          decorationStyle: TextDecorationStyle.dashed);
+                      break;
+                  }
+                }
+                //URL styling
                 TextSpan x = TextSpan(
                   text: val.data.toString(),
-                  style: TextStyle(color: Colors.blue[400]),
+                  style: styleURL,
                   recognizer: new TapGestureRecognizer()
                     ..onTap = () => {_launchURL(val.data.toString())},
                 );
@@ -112,7 +150,7 @@ class Message {
   String nick;
   int timestamp;
   MessageSegment data;
-
+  static const List linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
   Message({this.type, this.nick, this.timestamp, this.data});
 
   String readTimestamp() {
@@ -341,7 +379,60 @@ class Message {
       return base;
     }
 
+    Set<String> recDetermineLinkModfier(
+        MessageSegment message, Set<String> modifierSet) {
+      // Set<String> modifierSet = new Set();
+      // print(message.toString());
+      if (message.subSegemnts != null) {
+        message.subSegemnts.forEach((subSegment) {
+          if (subSegment.subSegements != null) {
+            modifierSet.addAll(
+                recDetermineLinkModfier(subSegment, modifierSet)); // rec down
+
+          } else {
+            if (subSegment.data.trim().length >= 4) {
+              for (var linkMod in linkModifiers) {
+                if (subSegment.data.contains(linkMod)) {
+                  print(linkMod);
+                  modifierSet.add(linkMod);
+                  break; // we don't need to search any longer as the importance is front loaded
+                }
+              }
+            }
+          }
+        });
+      }
+      return modifierSet;
+    }
+
+    _recAttatchLinkModifiers(MessageSegment message, String linkModifier) {
+      if (message.subSegemnts != null) {
+        message.subSegemnts.forEach((subSegment) {
+          if (subSegment.subSegements != null) {
+            _recAttatchLinkModifiers(subSegment, linkModifier); // rec down
+
+          } else {
+            if (subSegment.type == "url") {
+              subSegment.linkModifier = linkModifier;
+            }
+          }
+        });
+      }
+    }
+
+    _attatchLinkModifiers(MessageSegment message) {
+      Set<String> linkModSet = new Set();
+      linkModSet = recDetermineLinkModfier(message, linkModSet);
+      for (var mod in linkModifiers) {
+        if (linkModSet.contains(mod)) {
+          _recAttatchLinkModifiers(message, mod);
+          break; // attach only most important modifier
+        }
+      }
+    }
+
     MessageSegment message = _tokenizeMessage(parsedJson['data']);
+    _attatchLinkModifiers(message);
     return Message(
         type: type,
         nick: parsedJson['nick'],
@@ -353,9 +444,10 @@ class Message {
 class MessageSegment {
   String type;
   String data;
+  String linkModifier;
   String modifier;
   List<MessageSegment> subSegemnts;
-
+  get getLinkModifier => linkModifier;
   get subSegements => subSegemnts;
 
   @override
