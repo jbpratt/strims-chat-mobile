@@ -7,11 +7,11 @@ void main() => runApp(App());
 
 class App extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { // TODO: add routes https://flutter.dev/docs/cookbook/navigation/navigate-with-arguments#3-register-the-widget-in-the-routes-table
     return MaterialApp(
       theme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: Colors.grey[999],
+        primaryColor: Colors.grey[800],
         accentColor: Colors.orange[700],
       ),
       home: new ChatPage(),

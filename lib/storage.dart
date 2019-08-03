@@ -3,9 +3,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class Storage {
   FlutterSecureStorage _storage;
   Map<String, String> _settings = new Map<String, String>();
+  get getSettings => _settings;
 
   Storage() {
     this._storage = new FlutterSecureStorage();
+  }
+  void resetSettings() {
+    this._settings = new Map<String, String>();
   }
 
   Future<void> initS() async {
@@ -14,6 +18,7 @@ class Storage {
 
   Future<void> loadSettings() async {
     this._settings = await this._storage.readAll();
+    //Rprint(this._settings);
   }
 
   void deleteAll() async {

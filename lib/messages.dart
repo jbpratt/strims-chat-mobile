@@ -1,16 +1,69 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:majora/settings.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:majora/emotes.dart';
 
 class MessageList extends StatelessWidget {
   final ScrollController _controller = ScrollController();
   final List<Message> _messages;
+  final String _userNickname;
+  Settings _settings; // < imported from ?
 
-  MessageList(this._messages);
+  MessageList(this._messages, this._settings, this._userNickname) {
+    // print("miyanobird:" + this._settings.toggles.toString()); // TODO: remove
+  }
 
-  _launchURL(String url) async {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        color: Colors.white,
+        child: ListView.builder(
+          shrinkWrap: true,
+          reverse: true,
+          controller: _controller,
+          itemCount: _messages.length,
+          itemBuilder: (BuildContext ctx, int index) {
+            Message msg = _messages[index];
+
+            var bgColour = Colors.pink;
+
+            return Card(
+                color: Colors.green,
+                // TODO: do this properly
+                child: _MessageListItem(msg, this._settings,
+                    _userNickname)); //Text.rich(TextSpan(children: output)));
+          },
+        ));
+  }
+}
+
+class _MessageListItem extends ListTile {
+  Settings _settings;
+  String _userNickname;
+  _MessageListItem(Message msg, this._settings, this._userNickname)
+      : super(
+            dense: true,
+            title: Text.rich(
+                TextSpan(
+                    children: messageToWidget(
+                  msg.data,
+                  _settings,
+                  _userNickname,
+                  msg.nick,
+                )), // colour here somehow
+                style: TextStyle(
+                    color: Colors.grey[400],
+                    background: Paint()..color = Colors.black)),
+            subtitle: Text(msg.nick,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                )),
+            trailing: Icon(Icons.more_vert),
+            onTap: () {});
+
+  static _launchURL(String url) async {
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -18,130 +71,118 @@ class MessageList extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      shrinkWrap: true,
-      reverse: true,
-      controller: _controller,
-      itemCount: _messages.length,
-      itemBuilder: (BuildContext ctx, int index) {
-        Message msg = _messages[index];
+  Color flipColor(Color color) {}
+  static messageToWidget(MessageSegment segment, Settings settings,
+      String userNick, String senderNick) {
+    var output = <InlineSpan>[];
+    if (segment.subSegements != null) {
+      segment.subSegements.forEach((val) {
+        // TODO: get this from the settings class
+        var bgColour = Colors.green; // default colour
 
-        var output = <InlineSpan>[];
+        if (userNick == senderNick) {
+          bgColour = Colors.grey[900];
+        } else {
+          if (userNick == null || userNick.isEmpty) {
+            // messsage contains anonymous
+          }
+        }
+        switch (val.type) {
+          case "text":
+            TextSpan x = TextSpan(
+                text: val.data.toString(),
+                style: TextStyle(
+                    color: (bgColour.computeLuminance() > 0.5
+                        ? bgColour.shade800
+                        : bgColour
+                            .shade100), // TODO: implement a function for this
+                    background: Paint()..color = Colors.transparent));
+            output.add(x);
+            break;
+          case "emote":
+            AssetImage img = AssetImage('assets/${val.data}');
+            Image x = Image(
+              image: img,
+              height: 32,
+            );
+            output.add(WidgetSpan(
+                child: x,
+                style: TextStyle(
+                    color: Colors.grey[400],
+                    background: Paint()..color = Colors.transparent)));
+            break;
+          case "url":
+            //URL styling // there has to be a better way to do this
+            var styleURL = TextStyle(
+                color: Colors.blue[400],
+                decoration: TextDecoration.underline,
+                background: Paint()..color = Colors.transparent);
 
-        var ts = TextSpan(
-            text: msg.readTimestamp() + " ",
-            style: TextStyle(color: Colors.blueGrey[700]));
-
-        output.add(ts);
-
-        var nick;
-        switch (msg.type) {
-          case "PRIVMSG":
-            nick = TextSpan(
-                text: msg.nick + " whispered: ",
-                style:
-                    TextStyle(background: Paint()..color = Colors.blue[400]));
+            if (val.getLinkModifier != null) {
+              switch (val.getLinkModifier) {
+                case "nsfl":
+                  styleURL = TextStyle(
+                      color: Colors.blue[400],
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.yellow[400],
+                      decorationStyle: TextDecorationStyle.dashed,
+                      background: Paint()..color = Colors.transparent);
+                  break;
+                case "nsfw":
+                  styleURL = TextStyle(
+                      color: Colors.blue[400],
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.red[400],
+                      decorationStyle: TextDecorationStyle.dashed,
+                      background: Paint()..color = Colors.transparent);
+                  break;
+                case "loud":
+                  styleURL = TextStyle(
+                      color: Colors.blue[400],
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.blue[400],
+                      decorationStyle: TextDecorationStyle.dashed,
+                      background: Paint()..color = Colors.transparent);
+                  break;
+                case "weeb":
+                  styleURL = TextStyle(
+                      color: Colors.blue[400],
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.purple[400],
+                      decorationStyle: TextDecorationStyle.dashed,
+                      background: Paint()..color = Colors.transparent);
+                  break;
+              }
+            }
+            //URL styling
+            TextSpan x = TextSpan(
+              text: val.data.toString(),
+              style: styleURL,
+              recognizer: new TapGestureRecognizer()
+                ..onTap = () => {_launchURL(val.data.toString())},
+            );
+            output.add(x);
+            break;
+          case "code":
+            TextSpan x = TextSpan(
+                text: val.data.toString(),
+                style: TextStyle(
+                    color: Colors.grey[400],
+                    background: Paint()..color = bgColour));
+            output.add(x);
             break;
           default:
-            nick = TextSpan(
-                text: msg.nick + ": ",
-                style:
-                    TextStyle(background: Paint()..color = Colors.grey[900]));
+            TextSpan x = TextSpan(
+                style: TextStyle(
+                    color: Colors.grey[400],
+                    background: Paint()..color = Colors.transparent),
+                children: messageToWidget(val, settings, userNick, senderNick));
+            output.add(x);
+            break;
         }
-
-        output.add(nick);
-
-        // TODO: do this properly
-        if (msg.data.subSegements != null) {
-          msg.data.subSegements.forEach((val) {
-            // if type text, render text text span
-            // if type emote, render img span
-            // output.add(x);
-            switch (val.type) {
-              case "text":
-                TextSpan x = TextSpan(
-                    text: val.data.toString(),
-                    style: TextStyle(color: Colors.grey[400]));
-                output.add(x);
-                break;
-              case "emote":
-                AssetImage img = AssetImage('assets/${val.data}');
-                Image x = Image(
-                  image: img,
-                  height: 32,
-                );
-                output.add(WidgetSpan(child: x));
-                break;
-              case "url":
-                //URL styling // there has to be a better way to do this
-                var styleURL = TextStyle(
-                    color: Colors.blue[400],
-                    decoration: TextDecoration.underline);
-
-                if (val.getLinkModifier != null) {
-                  switch (val.getLinkModifier) {
-                    case "nsfl":
-                      styleURL = TextStyle(
-                          color: Colors.blue[400],
-                          decoration: TextDecoration.underline,
-                          decorationColor: Colors.yellow[400],
-                          decorationStyle: TextDecorationStyle.dashed);
-                      break;
-                    case "nsfw":
-                      styleURL = TextStyle(
-                          color: Colors.blue[400],
-                          decoration: TextDecoration.underline,
-                          decorationColor: Colors.red[400],
-                          decorationStyle: TextDecorationStyle.dashed);
-                      break;
-                    case "loud":
-                      styleURL = TextStyle(
-                          color: Colors.blue[400],
-                          decoration: TextDecoration.underline,
-                          decorationColor: Colors.blue[400],
-                          decorationStyle: TextDecorationStyle.dashed);
-                      break;
-                    case "weeb":
-                      styleURL = TextStyle(
-                          color: Colors.blue[400],
-                          decoration: TextDecoration.underline,
-                          decorationColor: Colors.purple[400],
-                          decorationStyle: TextDecorationStyle.dashed);
-                      break;
-                  }
-                }
-                //URL styling
-                TextSpan x = TextSpan(
-                  text: val.data.toString(),
-                  style: styleURL,
-                  recognizer: new TapGestureRecognizer()
-                    ..onTap = () => {_launchURL(val.data.toString())},
-                );
-                output.add(x);
-                break;
-              case "code":
-                TextSpan x = TextSpan(
-                    text: val.data.toString(),
-                    style: TextStyle(color: Colors.grey[400]));
-                output.add(x);
-                break;
-              default:
-                TextSpan x = TextSpan(
-                    text: val.toString(),
-                    style: TextStyle(color: Colors.grey[400]));
-                output.add(x);
-                break;
-            }
-          });
-        }
-
-        return Card(
-            color: Colors.transparent,
-            child: Text.rich(TextSpan(children: output)));
-      },
-    );
+      });
+      return output;
+    }
   }
 }
 
@@ -152,6 +193,28 @@ class Message {
   MessageSegment data;
   static const List linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
   Message({this.type, this.nick, this.timestamp, this.data});
+
+  @override
+  String toString() {
+    return _recReturnMessageAsString(this.data);
+  }
+
+  String _recReturnMessageAsString(MessageSegment message) {
+    String messageAsString = "";
+    if (message.subSegemnts != null) {
+      message.subSegemnts.forEach((subSegment) {
+        if (subSegment.subSegements != null) {
+          messageAsString += _recReturnMessageAsString(subSegment); // rec down
+
+        } else {
+          if (subSegment.data != null) {
+            messageAsString += subSegment.data;
+          }
+        }
+      });
+    }
+    return messageAsString;
+  }
 
   String readTimestamp() {
     if (this.timestamp != 0) {
@@ -252,6 +315,7 @@ class Message {
         if (indexTwo != -1) {
           var betweenTags = afterTag.substring(0, indexTwo);
           if (new RegExp(r'^\s*$').hasMatch(betweenTags)) {
+            // checks for only whitespace in string
             returnList.add(new MessageSegment(
                 'text', str.substring(0, indexOne) + '||||'));
           } else {
@@ -272,7 +336,8 @@ class Message {
       List<MessageSegment> returnList = new List<MessageSegment>();
       String tmpBuffer = "";
       bool foundEmote = false;
-      if (base.type == 'text' && base.subSegemnts == null) {
+      if ((base.type == 'text' || base.type == 'spoiler') &&
+          base.subSegemnts == null) {
         for (String segment in base.data.split(" ")) {
           List<String> colonSplit = segment.split(":");
           if (colonSplit.length == 1 && kEmotes.containsKey(segment)) {
@@ -311,7 +376,8 @@ class Message {
     }
 
     _tokenizeLinks(MessageSegment base) {
-      if (base.type == 'text' && base.subSegemnts == null) {
+      if ((base.type == 'text' || base.type == 'spoiler') &&
+          base.subSegemnts == null) {
         RegExp reg = new RegExp(
             r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
         List<MessageSegment> newSegments = new List<MessageSegment>();
@@ -381,8 +447,6 @@ class Message {
 
     Set<String> recDetermineLinkModfier(
         MessageSegment message, Set<String> modifierSet) {
-      // Set<String> modifierSet = new Set();
-      // print(message.toString());
       if (message.subSegemnts != null) {
         message.subSegemnts.forEach((subSegment) {
           if (subSegment.subSegements != null) {
@@ -393,7 +457,6 @@ class Message {
             if (subSegment.data.trim().length >= 4) {
               for (var linkMod in linkModifiers) {
                 if (subSegment.data.contains(linkMod)) {
-                  print(linkMod);
                   modifierSet.add(linkMod);
                   break; // we don't need to search any longer as the importance is front loaded
                 }
@@ -431,6 +494,8 @@ class Message {
       }
     }
 
+    bool _containsUserNickname(MessageSegment message, String userNickname) {}
+
     MessageSegment message = _tokenizeMessage(parsedJson['data']);
     _attatchLinkModifiers(message);
     return Message(
@@ -442,6 +507,7 @@ class Message {
 }
 
 class MessageSegment {
+  bool containsUsername;
   String type;
   String data;
   String linkModifier;

@@ -141,6 +141,7 @@ class _ChatPageState extends State<ChatPage> {
         jwt = this.storage.getSetting('jwt');
         nick = this.storage.getSetting('nick');
       }
+      // load settings
     }).then((val) {
       updateToken();
       listen();
@@ -181,9 +182,14 @@ class _ChatPageState extends State<ChatPage> {
       _showLoginDialog();
     }
 
-    // TODO: handle pms
-
     if (controller.text.isNotEmpty) {
+      // TODO: handle pms, tags, ignores, ban
+      // help,
+      // if first two chars are '/w' or '/msg' or '/message' // any chat "/" function
+      // then grab username
+      // construct and send pm
+      // else
+      // handle normal
       ws.channel.sink.add('MSG {"data":"' + controller.text + '"}');
       controller.text = "";
     }
@@ -250,7 +256,8 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     String label = determineLabel();
-
+    Settings settings = new Settings();
+    // SettingsRoute settingsRoute = SettingsRoute(); // TODO: remove this 
     return Scaffold(
         appBar: new AppBar(
           title: Row(
@@ -286,7 +293,7 @@ class _ChatPageState extends State<ChatPage> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SettingsRoute(),
+                        builder: (context) =>SettingsRoute(settings), // TODO: save to storage on close of settings widget
                       ));
                 },
               ),
@@ -367,7 +374,7 @@ class _ChatPageState extends State<ChatPage> {
                 ]),
           ),
           Expanded(
-            child: ListView(children: <Widget>[MessageList(messages)]),
+            child: ListView(children: <Widget>[MessageList(messages,settings,nick)]),
           )
         ]));
   }
@@ -383,5 +390,3 @@ class WhispersRoute extends StatelessWidget {
         body: Column(children: <Widget>[]));
   }
 }
-
-
