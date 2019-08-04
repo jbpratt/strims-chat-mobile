@@ -145,7 +145,7 @@ class _SettingsState extends State<SettingsRoute> {
           // error here for not being able to load settings
         }
         this.settings.usersIgnored = loadFilter("usersIgnored");
-        this.settings.wordsHighight = loadFilter("wordsHighlight");
+        this.settings.wordsHighlighted = loadFilter("wordsHighlight");
         this.settings.wordsHidden = loadFilter("wordsHidden");
       } else {
         loadDefaultSettings();
@@ -211,7 +211,7 @@ class _SettingsState extends State<SettingsRoute> {
     });
 
     this.settings.userTags = new Map<String, String>();
-    this.settings.wordsHighight = new Set<String>();
+    this.settings.wordsHighlighted = new Set<String>();
     this.settings.usersIgnored = new Set<String>();
     this.settings.wordsHidden = new Set<String>();
   }
@@ -361,17 +361,22 @@ class _SettingsState extends State<SettingsRoute> {
 class Settings {
   Map<String, bool> toggles; // <- settings
   Map<String, String> userTags; // username + colour
-  Set<String> wordsHighight; // word
+  Set<String> wordsHighlighted; // word
   Set<String> usersIgnored; // username
   Set<String> wordsHidden; // word
-  Color cardColor = Colors.green; // card color
-  Color privateCardColor = Colors.white; // card color for private messages
-  Color bgColor = Colors.grey[900]; // global background
+
+
+  Map<String, Theme> themes; // the themes users can use
+
+  Color cardColor = Color.fromARGB(255, 22, 25, 28); // card color
+  Color privateCardColor =
+      Color.fromARGB(255, 196, 94, 0); // card color for private messages
+  Color bgColor = Color.fromARGB(255, 153, 153, 153); // global background
 
   Settings() {
     toggles = new Map<String, bool>();
     userTags = new Map<String, String>();
-    wordsHighight = new Set<String>();
+    wordsHighlighted = new Set<String>();
     usersIgnored = new Set<String>();
     wordsHidden = new Set<String>();
 

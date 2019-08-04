@@ -12,6 +12,7 @@ import 'browser.dart';
 import 'chatter.dart';
 import 'emotes.dart';
 import 'messages.dart';
+import 'utilities.dart';
 
 final String kAppTitle = "Strims";
 final String kLogoPath = "assets/favicon.ico";
@@ -34,13 +35,17 @@ class _ChatPageState extends State<ChatPage> {
   Future<Map<String, Emote>> emotes;
   Storage storage = new Storage();
   String label;
+  Settings settings = new Settings();
 
+  Utilities utilities = new Utilities();
   void infoMsg(String msg) {
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     Message m = Message.fromJson(
         "MSG",
         json.decode(
-            '{"nick":"info","features":[],"timestamp":$timestamp,"data":"$msg"}'));
+            '{"nick":"info","features":[],"timestamp":$timestamp,"data":"$msg"}'),
+        this.settings,
+        nick);
 
     setState(() => messages.add(m));
   }
@@ -252,7 +257,6 @@ class _ChatPageState extends State<ChatPage> {
 
   void handleReceive(String msg) {
     var wsResponse = parseMsg(msg);
-    print(wsResponse);
     switch (wsResponse[0]) {
       case "NAMES":
         setState(() {
@@ -263,13 +267,13 @@ class _ChatPageState extends State<ChatPage> {
             'Currently serving $count connections and ${chatters.length} users');
         break;
       case "MSG":
-        Message m =
-            new Message.fromJson(wsResponse[0], json.decode(wsResponse[1]));
+        Message m = new Message.fromJson(
+            wsResponse[0], json.decode(wsResponse[1]), this.settings, nick);
         setState(() => messages.add(m));
         break;
       case "PRIVMSG":
-        Message m =
-            new Message.fromJson(wsResponse[0], json.decode(wsResponse[1]));
+        Message m = new Message.fromJson(
+            wsResponse[0], json.decode(wsResponse[1]), this.settings, nick);
         setState(() => messages.add(m));
         break;
       case "JOIN":
@@ -300,10 +304,15 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     label = determineLabel();
-    Settings settings = new Settings();
+
+    Color headerColor = Utilities.flipColor(settings.bgColor, 100);
     // SettingsRoute settingsRoute = SettingsRoute(); // TODO: remove this
     return Scaffold(
         appBar: new AppBar(
+          iconTheme: new IconThemeData(
+            color: Utilities.flipColor(headerColor, 100),
+          ),
+          backgroundColor: headerColor,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -319,7 +328,10 @@ class _ChatPageState extends State<ChatPage> {
           elevation: 0.0,
           actions: <Widget>[
             IconButton(
-              icon: Icon(Icons.person),
+              icon: Icon(
+                Icons.person,
+                color: Utilities.flipColor(headerColor, 100),
+              ),
               onPressed: () {
                 login();
               },
@@ -331,7 +343,10 @@ class _ChatPageState extends State<ChatPage> {
             children: <Widget>[
               ListTile(
                 title: Text('Settings'),
-                trailing: Icon(Icons.settings),
+                trailing: Icon(
+                  Icons.settings,
+                  color: Utilities.flipColor(headerColor, 100),
+                ),
                 onTap: () {
                   Navigator.of(context).pop();
                   Navigator.push(
@@ -389,14 +404,13 @@ class _ChatPageState extends State<ChatPage> {
             ],
           ),
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: settings.bgColor,
         body: Column(children: <Widget>[
           Container(
             padding: EdgeInsets.symmetric(
               vertical: 5.0,
               horizontal: 5.0,
             ),
-            color: Colors.grey[900],
             child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: <Widget>[
@@ -405,7 +419,6 @@ class _ChatPageState extends State<ChatPage> {
                     child: new TextFormField(
                       decoration: new InputDecoration(
                         labelText: label,
-                        fillColor: Colors.black,
                         filled: true,
                       ),
                       controller: controller,
@@ -414,7 +427,6 @@ class _ChatPageState extends State<ChatPage> {
                   )),
                   ButtonTheme(
                     minWidth: 20.0,
-                    buttonColor: Colors.grey[900],
                     child: FlatButton(
                       onPressed: () {
                         sendData();

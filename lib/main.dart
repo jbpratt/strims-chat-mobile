@@ -6,6 +6,7 @@ import 'chat.dart';
 void main() => runApp(App());
 
 class App extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) { // TODO: add routes https://flutter.dev/docs/cookbook/navigation/navigate-with-arguments#3-register-the-widget-in-the-routes-table
     return MaterialApp(

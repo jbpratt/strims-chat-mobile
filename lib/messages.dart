@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:majora/settings.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:majora/emotes.dart';
+import 'package:majora/utilities.dart';
 
 class MessageList extends StatelessWidget {
   final ScrollController _controller = ScrollController();
@@ -15,11 +15,10 @@ class MessageList extends StatelessWidget {
   MessageList(this._messages, this._settings, this._userNickname) {
     // print("miyanobird:" + this._settings.toggles.toString()); // TODO: remove
   }
-
   @override
   Widget build(BuildContext context) {
     return Container(
-        color: Colors.grey,
+        color: _settings.bgColor,
         child: ListView.builder(
           shrinkWrap: true,
           reverse: true,
@@ -28,17 +27,73 @@ class MessageList extends StatelessWidget {
           itemBuilder: (BuildContext ctx, int index) {
             Message msg = _messages[index];
 
-            var bgColour = Colors.pink;
-
             return Card(
                 color: (msg.type == "PRIVMSG"
                     ? _settings.privateCardColor
                     : _settings.cardColor),
                 // TODO: do this properly
-                child: _MessageListItem(msg, this._settings,
-                    _userNickname)); //Text.rich(TextSpan(children: output)));
+                child: Container(
+                    decoration: BoxDecoration(
+                      border: msg.mentioned
+                          ? Border(
+                              bottom: BorderSide(
+                              color: _settings.privateCardColor,
+                              width: 5,
+                            ))
+                          : null,
+                    ),
+                    child:
+                        _MessageListItem(msg, this._settings, _userNickname)));
           },
         ));
+  }
+}
+
+class DropdownMenu extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Padding(padding: EdgeInsets.only(top: 400)),
+        PopupMenuButton<String>(
+          icon: Icon(Icons.settings),
+          onSelected: choiceAction,
+          itemBuilder: (BuildContext context) {
+            return Constants.choices.map((String choice) {
+              return PopupMenuItem<String>(
+                value: choice,
+                child: Text(choice),
+              );
+            }).toList();
+          },
+        ),
+      ],
+    ));
+  }
+}
+
+class Constants {
+  static const String FirstItem = 'First Item';
+  static const String SecondItem = 'Second Item';
+  static const String ThirdItem = 'Third Item';
+
+  static const List<String> choices = <String>[
+    FirstItem,
+    SecondItem,
+    ThirdItem,
+  ];
+}
+
+void choiceAction(String choice) {
+  if (choice == Constants.FirstItem) {
+    print('I First Item');
+  } else if (choice == Constants.SecondItem) {
+    print('I Second Item');
+  } else if (choice == Constants.ThirdItem) {
+    print('I Third Item');
   }
 }
 
@@ -48,32 +103,39 @@ class _MessageListItem extends ListTile {
   _MessageListItem(Message msg, this._settings, this._userNickname)
       : super(
             dense: true,
-            title: Text.rich(
-              TextSpan(
-                  children: messageToWidget(
-                msg.data,
-                _settings,
-                _userNickname,
-                msg.nick,
-                msg.type,
-              )), // colour here somehow
+            title: Padding(
+              padding: EdgeInsets.only(
+                top: 8,
+                bottom: 8,
+              ),
+              child: Text.rich(
+                TextSpan(
+                    children: messageToWidget(
+                  msg.data,
+                  _settings,
+                  _userNickname,
+                  msg.nick,
+                  msg.type,
+                )), // colour here somehow
+              ),
             ),
             subtitle:
                 Text(msg.type == "PRIVMSG" ? msg.nick + " whispered" : msg.nick,
                     style: TextStyle(
-                      color: flipColor(
+                      color: Utilities.flipColor(
                           msg.type == "PRIVMSG"
                               ? _settings.privateCardColor
                               : _settings.cardColor,
                           100),
                     )),
-            trailing: Icon(
-              Icons.more_vert,
-              color: flipColor(
-                  msg.type == "PRIVMSG"
+            trailing: new IconButton(
+              icon: Icon(Icons.more_vert),
+              color: Utilities.flipColor(
+                  (msg.type == "PRIVMSG"
                       ? _settings.privateCardColor
-                      : _settings.cardColor,
+                      : _settings.cardColor),
                   100),
+              onPressed: () {},
             ),
             onTap: () {});
 
@@ -83,23 +145,6 @@ class _MessageListItem extends ListTile {
     } else {
       throw 'Could not launch $url';
     }
-  }
-
-  static Color flipColor(Color color, int offset) {
-    int r = color.red;
-    int g = color.green;
-    int b = color.blue;
-    double lum = color.computeLuminance();
-    if (lum > 0.5) {
-      offset *= -1;
-    }
-
-    int newR = min(max(0, r + offset), 255);
-    int newG = min(max(0, g + offset), 255);
-    int newB = min(max(0, b + offset), 255);
-    Color newColor = Color.fromARGB(255, newR, newG, newB);
-
-    return newColor;
   }
 
   static messageToWidget(MessageSegment segment, Settings settings,
@@ -120,11 +165,11 @@ class _MessageListItem extends ListTile {
         switch (val.type) {
           case "text":
             TextSpan x = TextSpan(
-                text: val.data.toString(),
+                text: val.data.toString().trimLeft(),
                 children: messageToWidget(
                     val, settings, userNick, senderNick, msgType),
                 style: TextStyle(
-                    color: flipColor(
+                    color: Utilities.flipColor(
                         msgType == "PRIVMSG"
                             ? settings.privateCardColor
                             : settings.cardColor,
@@ -136,7 +181,7 @@ class _MessageListItem extends ListTile {
             AssetImage img = AssetImage('assets/${val.data}');
             Image x = Image(
               image: img,
-              height: 32,
+              height: 16,
             );
             output.add(WidgetSpan(
               child: x,
@@ -216,13 +261,26 @@ class _MessageListItem extends ListTile {
 }
 
 class Message {
+  String messageData;
   String type;
   String nick;
   int timestamp;
   MessageSegment data;
+  bool hasKeyword;
   bool mentioned;
+  Settings settings;
+  String userNickname;
   static const List linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
-  Message({this.type, this.nick, this.timestamp, this.data});
+  Message(
+      {this.type,
+      this.nick,
+      this.timestamp,
+      this.data,
+      this.settings,
+      this.hasKeyword,
+      this.mentioned,
+      this.userNickname,
+      this.messageData});
 
   @override
   String toString() {
@@ -263,7 +321,8 @@ class Message {
     return "";
   }
 
-  factory Message.fromJson(String type, Map parsedJson) {
+  factory Message.fromJson(
+      String type, Map parsedJson, Settings settings, String userNickname) {
     // ignore escaped backticks
     int _findNextTick(String str) {
       int base = 0;
@@ -524,14 +583,25 @@ class Message {
       }
     }
 
-    bool _containsUserNickname(MessageSegment message, String userNickname) {}
-
-    MessageSegment message = _tokenizeMessage(parsedJson['data']);
+    String msgString = parsedJson['data'];
+    MessageSegment message = _tokenizeMessage(msgString);
     _attatchLinkModifiers(message);
+    bool hasKwrd = false;
+    for (String word in settings.wordsHighlighted) {
+      if (msgString.contains(word)) {
+        hasKwrd = true;
+        break;
+      }
+    }
+
     return Message(
+        messageData: msgString,
+        hasKeyword: hasKwrd,
+        userNickname: userNickname,
+        mentioned: msgString.contains(userNickname),
         type: type,
         nick: parsedJson['nick'],
-        timestamp: parsedJson['timestamp'],
+        timestamp: parsedJson['timestamp'] as int,
         data: message);
   }
 }
