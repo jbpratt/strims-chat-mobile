@@ -33,6 +33,7 @@ class _ChatPageState extends State<ChatPage> {
   List<Chatter> chatters = [];
   Future<Map<String, Emote>> emotes;
   Storage storage = new Storage();
+  String label;
 
   void infoMsg(String msg) {
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
@@ -138,8 +139,11 @@ class _ChatPageState extends State<ChatPage> {
       infoMsg("checking storage for user");
       if (this.storage.hasSetting('jwt')) {
         infoMsg("found user in storage");
-        jwt = this.storage.getSetting('jwt');
-        nick = this.storage.getSetting('nick');
+        setState(() {
+          jwt = this.storage.getSetting('jwt');
+          nick = this.storage.getSetting('nick');
+          label = determineLabel();
+        });
       }
       // load settings
     }).then((val) {
@@ -183,14 +187,23 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (controller.text.isNotEmpty) {
-      // TODO: handle pms, tags, ignores, ban
-      // help,
-      // if first two chars are '/w' or '/msg' or '/message' // any chat "/" function
-      // then grab username
-      // construct and send pm
-      // else
-      // handle normal
-      ws.channel.sink.add('MSG {"data":"' + controller.text + '"}');
+      var text = controller.text;
+      // if first two chars are '/w' or '/msg' or '/message';
+      if ((text.substring(0, 1) == '/w') || (text.substring(0, 3) == '/msg')) {
+        var inmsg = text.split(" ");
+        if (chatters.contains(inmsg[1])) {
+          String out;
+          for (var word in inmsg.skip(2)) {
+            out += word;
+          }
+          // send whisper
+          ws.channel.sink
+              .add('PRIVMSG {"nick:"' + inmsg[1] + '"data":"' + out + '"}');
+        }
+      } else {
+        ws.channel.sink.add('MSG {"data":"' + controller.text + '"}');
+      }
+
       controller.text = "";
     }
   }
@@ -255,9 +268,9 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    String label = determineLabel();
+    label = determineLabel();
     Settings settings = new Settings();
-    // SettingsRoute settingsRoute = SettingsRoute(); // TODO: remove this 
+    // SettingsRoute settingsRoute = SettingsRoute(); // TODO: remove this
     return Scaffold(
         appBar: new AppBar(
           title: Row(
@@ -293,7 +306,8 @@ class _ChatPageState extends State<ChatPage> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>SettingsRoute(settings), // TODO: save to storage on close of settings widget
+                        builder: (context) => SettingsRoute(
+                            settings), // TODO: save to storage on close of settings widget
                       ));
                 },
               ),
@@ -323,8 +337,13 @@ class _ChatPageState extends State<ChatPage> {
               ),
               RaisedButton(
                 onPressed: () {
-                  nick = "";
-                  jwt = "";
+                  setState(() {
+                    nick = "";
+                    ws.token = "";
+                  });
+
+                  storage.deleteSetting('jwt');
+                  storage.deleteSetting('nick');
 
                   resetChannel();
                   // reset conn
@@ -374,7 +393,8 @@ class _ChatPageState extends State<ChatPage> {
                 ]),
           ),
           Expanded(
-            child: ListView(children: <Widget>[MessageList(messages,settings,nick)]),
+            child: ListView(
+                children: <Widget>[MessageList(messages, settings, nick)]),
           )
         ]));
   }

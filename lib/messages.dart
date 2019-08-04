@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:majora/settings.dart';
@@ -18,7 +19,7 @@ class MessageList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        color: Colors.white,
+        color: Colors.grey,
         child: ListView.builder(
           shrinkWrap: true,
           reverse: true,
@@ -30,7 +31,7 @@ class MessageList extends StatelessWidget {
             var bgColour = Colors.pink;
 
             return Card(
-                color: Colors.green,
+                color: Colors.blueGrey,
                 // TODO: do this properly
                 child: _MessageListItem(msg, this._settings,
                     _userNickname)); //Text.rich(TextSpan(children: output)));
@@ -58,7 +59,7 @@ class _MessageListItem extends ListTile {
                     background: Paint()..color = Colors.black)),
             subtitle: Text(msg.nick,
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: flipColor(Colors.blueGrey, 50),
                 )),
             trailing: Icon(Icons.more_vert),
             onTap: () {});
@@ -71,17 +72,33 @@ class _MessageListItem extends ListTile {
     }
   }
 
-  Color flipColor(Color color) {}
+  static Color flipColor(Color color, int offset) {
+    int r = color.red;
+    int g = color.green;
+    int b = color.blue;
+    double lum = color.computeLuminance();
+    if (lum > 0.5) {
+      offset *= -1;
+    }
+
+    int newR = min(max(0, r + offset), 255);
+    int newG = min(max(0, g + offset), 255);
+    int newB = min(max(0, b + offset), 255);
+    Color newColor = Color.fromARGB(255, newR, newG, newB);
+
+    return newColor;
+  }
+
   static messageToWidget(MessageSegment segment, Settings settings,
       String userNick, String senderNick) {
     var output = <InlineSpan>[];
     if (segment.subSegements != null) {
       segment.subSegements.forEach((val) {
         // TODO: get this from the settings class
-        var bgColour = Colors.green; // default colour
+        var bgColour = Colors.blueGrey; // default colour
 
         if (userNick == senderNick) {
-          bgColour = Colors.grey[900];
+          bgColour = Colors.amber;
         } else {
           if (userNick == null || userNick.isEmpty) {
             // messsage contains anonymous
@@ -91,11 +108,10 @@ class _MessageListItem extends ListTile {
           case "text":
             TextSpan x = TextSpan(
                 text: val.data.toString(),
+                children: messageToWidget(val, settings, userNick, senderNick),
                 style: TextStyle(
-                    color: (bgColour.computeLuminance() > 0.5
-                        ? bgColour.shade800
-                        : bgColour
-                            .shade100), // TODO: implement a function for this
+                    color: flipColor(Colors.blueGrey,
+                        100), // TODO: implement a function for this
                     background: Paint()..color = Colors.transparent));
             output.add(x);
             break;
