@@ -103,6 +103,8 @@ class _ChatPageState extends State<ChatPage> {
           }
         });
       });
+    }).then((onValue) {
+      resetChannel();
     });
   }
 
@@ -117,8 +119,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void resetOnBrowserClose() {
-    //kUser = inAppBrowser.getNewUser();
-
     updateToken();
     resetChannel();
   }
@@ -187,25 +187,55 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (controller.text.isNotEmpty) {
+      print("text is not empty");
       var text = controller.text;
-      // if first two chars are '/w' or '/msg' or '/message';
-      if ((text.substring(0, 1) == '/w') || (text.substring(0, 3) == '/msg')) {
-        var inmsg = text.split(" ");
-        if (chatters.contains(inmsg[1])) {
-          String out;
-          for (var word in inmsg.skip(2)) {
-            out += word;
+      // if first two chars are '/w' or '/msg' or '/message' or '/tell' or '/notify' or '/t'  or '/whisper' // <- all pms
+      // if user is auth as moderator // '/ban' or '/mute'
+
+      if (text[0] == '/') {
+        print("text is a command");
+        // TODO: handle all "/" functions
+        if (text.contains(new RegExp(
+            r"^\/(w|(whisper)|(message)|(msg)|t|(tell)|(notify))"))) {
+          print("text is a private message");
+          // is private message
+
+          print("complete string:" + text);
+          List<String> splitText = text.split(new RegExp(
+              r"\s")); // https://stackoverflow.com/questions/45865989/dart-use-regexp-to-remove-whitespaces-from-string
+          String username = splitText[1];
+
+          bool found = false;
+          for (Chatter val in chatters) {
+            if (val.nick.toLowerCase() == username.toLowerCase()) {
+              username = val.nick;
+              found = true;
+              break;
+            }
           }
-          // send whisper
-          ws.channel.sink
-              .add('PRIVMSG {"nick:"' + inmsg[1] + '"data":"' + out + '"}');
+
+          if (!found) {
+            infoMsg(
+                "the user you are trying to talk to is currently not in chat UwU");
+            print(
+                "the user you are trying to talk to is currently not in chat UwU");
+            return;
+          }
+
+          String body = splitText.sublist(2).join(" ");
+          print("recipient: " + username);
+          print("message: " + body);
+
+          ws.channel.sink.add(
+              'PRIVMSG {"nick":"' + username + '", "data":"' + body + '"}');
         }
       } else {
-        ws.channel.sink.add('MSG {"data":"' + controller.text + '"}');
+        print("text is a regular message");
+        ws.channel.sink.add('MSG {"data":"' + text + '"}');
       }
-
-      controller.text = "";
     }
+
+    controller.text = "";
   }
 
   void sendDataKeyboard(String data) {
@@ -222,6 +252,7 @@ class _ChatPageState extends State<ChatPage> {
 
   void handleReceive(String msg) {
     var wsResponse = parseMsg(msg);
+    print(wsResponse);
     switch (wsResponse[0]) {
       case "NAMES":
         setState(() {
@@ -339,7 +370,8 @@ class _ChatPageState extends State<ChatPage> {
                 onPressed: () {
                   setState(() {
                     nick = "";
-                    ws.token = "";
+                    jwt = "";
+                    updateToken();
                   });
 
                   storage.deleteSetting('jwt');

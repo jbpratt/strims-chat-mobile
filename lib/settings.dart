@@ -364,8 +364,9 @@ class Settings {
   Set<String> wordsHighight; // word
   Set<String> usersIgnored; // username
   Set<String> wordsHidden; // word
-  Color cardColor; // card color 
-  Color bgColor; // global background
+  Color cardColor = Colors.green; // card color
+  Color privateCardColor = Colors.white; // card color for private messages
+  Color bgColor = Colors.grey[900]; // global background
 
   Settings() {
     toggles = new Map<String, bool>();
@@ -373,10 +374,9 @@ class Settings {
     wordsHighight = new Set<String>();
     usersIgnored = new Set<String>();
     wordsHidden = new Set<String>();
-    
 
+    // settings defaults for testing  // TODO: remove
 
-    // settings defaults for testing  // TODO: remove 
     toggles.addAll({
       'showTime': true,
       'hideNSFWNSFL': false,
@@ -390,5 +390,4 @@ class Settings {
       'emotes': true,
     });
   }
-  
 }

@@ -36,7 +36,7 @@ class ChatterListRoute extends StatelessWidget {
   final List<Chatter> _chatterList;
 
   ChatterListRoute(this._chatterList);
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(

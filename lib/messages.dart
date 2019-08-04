@@ -31,7 +31,9 @@ class MessageList extends StatelessWidget {
             var bgColour = Colors.pink;
 
             return Card(
-                color: Colors.blueGrey,
+                color: (msg.type == "PRIVMSG"
+                    ? _settings.privateCardColor
+                    : _settings.cardColor),
                 // TODO: do this properly
                 child: _MessageListItem(msg, this._settings,
                     _userNickname)); //Text.rich(TextSpan(children: output)));
@@ -47,21 +49,32 @@ class _MessageListItem extends ListTile {
       : super(
             dense: true,
             title: Text.rich(
-                TextSpan(
-                    children: messageToWidget(
-                  msg.data,
-                  _settings,
-                  _userNickname,
-                  msg.nick,
-                )), // colour here somehow
-                style: TextStyle(
-                    color: Colors.grey[400],
-                    background: Paint()..color = Colors.black)),
-            subtitle: Text(msg.nick,
-                style: TextStyle(
-                  color: flipColor(Colors.blueGrey, 50),
-                )),
-            trailing: Icon(Icons.more_vert),
+              TextSpan(
+                  children: messageToWidget(
+                msg.data,
+                _settings,
+                _userNickname,
+                msg.nick,
+                msg.type,
+              )), // colour here somehow
+            ),
+            subtitle:
+                Text(msg.type == "PRIVMSG" ? msg.nick + " whispered" : msg.nick,
+                    style: TextStyle(
+                      color: flipColor(
+                          msg.type == "PRIVMSG"
+                              ? _settings.privateCardColor
+                              : _settings.cardColor,
+                          100),
+                    )),
+            trailing: Icon(
+              Icons.more_vert,
+              color: flipColor(
+                  msg.type == "PRIVMSG"
+                      ? _settings.privateCardColor
+                      : _settings.cardColor,
+                  100),
+            ),
             onTap: () {});
 
   static _launchURL(String url) async {
@@ -90,7 +103,7 @@ class _MessageListItem extends ListTile {
   }
 
   static messageToWidget(MessageSegment segment, Settings settings,
-      String userNick, String senderNick) {
+      String userNick, String senderNick, String msgType) {
     var output = <InlineSpan>[];
     if (segment.subSegements != null) {
       segment.subSegements.forEach((val) {
@@ -108,10 +121,14 @@ class _MessageListItem extends ListTile {
           case "text":
             TextSpan x = TextSpan(
                 text: val.data.toString(),
-                children: messageToWidget(val, settings, userNick, senderNick),
+                children: messageToWidget(
+                    val, settings, userNick, senderNick, msgType),
                 style: TextStyle(
-                    color: flipColor(Colors.blueGrey,
-                        100), // TODO: implement a function for this
+                    color: flipColor(
+                        msgType == "PRIVMSG"
+                            ? settings.privateCardColor
+                            : settings.cardColor,
+                        150), // TODO: implement a function for this
                     background: Paint()..color = Colors.transparent));
             output.add(x);
             break;
@@ -122,10 +139,8 @@ class _MessageListItem extends ListTile {
               height: 32,
             );
             output.add(WidgetSpan(
-                child: x,
-                style: TextStyle(
-                    color: Colors.grey[400],
-                    background: Paint()..color = Colors.transparent)));
+              child: x,
+            ));
             break;
           case "url":
             //URL styling // there has to be a better way to do this
@@ -189,10 +204,8 @@ class _MessageListItem extends ListTile {
             break;
           default:
             TextSpan x = TextSpan(
-                style: TextStyle(
-                    color: Colors.grey[400],
-                    background: Paint()..color = Colors.transparent),
-                children: messageToWidget(val, settings, userNick, senderNick));
+                children: messageToWidget(
+                    val, settings, userNick, senderNick, msgType));
             output.add(x);
             break;
         }
@@ -207,6 +220,7 @@ class Message {
   String nick;
   int timestamp;
   MessageSegment data;
+  bool mentioned;
   static const List linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
   Message({this.type, this.nick, this.timestamp, this.data});
 
