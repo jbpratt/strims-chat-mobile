@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:majora/settings.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:majora/emotes.dart';
 import 'package:majora/utilities.dart';
@@ -12,11 +13,12 @@ class MessageList extends StatelessWidget {
   final String _userNickname;
   Settings _settings; // < imported from ?
 
-  MessageList(this._messages, this._settings, this._userNickname) {
+  MessageList(this._messages, this._userNickname) {
     // print("miyanobird:" + this._settings.toggles.toString()); // TODO: remove
   }
   @override
   Widget build(BuildContext context) {
+    this._settings = Provider.of<SettingsNotifier>(context).settings;
     return Container(
         color: _settings.bgColor,
         child: ListView.builder(

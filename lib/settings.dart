@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'storage.dart';
+import 'package:majora/storage.dart';
 
 class SettingsRoute extends StatefulWidget {
   // Map<String, bool> settings = new Map<String, bool>();
@@ -365,7 +365,6 @@ class Settings {
   Set<String> usersIgnored; // username
   Set<String> wordsHidden; // word
 
-
   Map<String, Theme> themes; // the themes users can use
 
   Color cardColor = Color.fromARGB(255, 22, 25, 28); // card color
@@ -394,5 +393,12 @@ class Settings {
       'greentext': true,
       'emotes': true,
     });
+  }
+}
+
+class SettingsNotifier extends ChangeNotifier {
+  Settings settings = new Settings();
+  void updateSettings() {
+    notifyListeners();
   }
 }

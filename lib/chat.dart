@@ -6,6 +6,7 @@ import 'package:http/http.dart';
 import 'package:majora/settings.dart';
 import 'package:majora/storage.dart';
 import 'package:majora/wsclient.dart';
+import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'browser.dart';
@@ -304,9 +305,8 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     label = determineLabel();
-
+    this.settings = Provider.of<SettingsNotifier>(context).settings;
     Color headerColor = Utilities.flipColor(settings.bgColor, 100);
-    // SettingsRoute settingsRoute = SettingsRoute(); // TODO: remove this
     return Scaffold(
         appBar: new AppBar(
           iconTheme: new IconThemeData(
@@ -353,7 +353,7 @@ class _ChatPageState extends State<ChatPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => SettingsRoute(
-                            settings), // TODO: save to storage on close of settings widget
+                            settings), // TODO: fix settings widget position in tree
                       ));
                 },
               ),
@@ -437,8 +437,7 @@ class _ChatPageState extends State<ChatPage> {
                 ]),
           ),
           Expanded(
-            child: ListView(
-                children: <Widget>[MessageList(messages, settings, nick)]),
+            child: ListView(children: <Widget>[MessageList(messages, nick)]),
           )
         ]));
   }
