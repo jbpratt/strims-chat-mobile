@@ -20,7 +20,8 @@ final String kLogoPath = "assets/favicon.ico";
 final String kAddress = "wss://chat.strims.gg/ws";
 
 Browser inAppBrowser = new Browser();
-String jwt, nick = "";
+String jwt = "";
+String nick = "Anonymous";
 
 class ChatPage extends StatefulWidget {
   @override
@@ -104,6 +105,7 @@ class _ChatPageState extends State<ChatPage> {
           String tmp = map['value'];
           if (tmp != null && tmp.length > 0) {
             jwt = tmp;
+            updateToken();
             storage.addSetting('jwt', jwt);
             _getAndSaveUsername();
           }
@@ -151,7 +153,6 @@ class _ChatPageState extends State<ChatPage> {
           label = determineLabel();
         });
       }
-      // load settings
     }).then((val) {
       updateToken();
       listen();
@@ -193,20 +194,16 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (controller.text.isNotEmpty) {
-      print("text is not empty");
       var text = controller.text;
       // if first two chars are '/w' or '/msg' or '/message' or '/tell' or '/notify' or '/t'  or '/whisper' // <- all pms
       // if user is auth as moderator // '/ban' or '/mute'
 
       if (text[0] == '/') {
-        print("text is a command");
         // TODO: handle all "/" functions
         if (text.contains(new RegExp(
             r"^\/(w|(whisper)|(message)|(msg)|t|(tell)|(notify))"))) {
-          print("text is a private message");
           // is private message
 
-          print("complete string:" + text);
           List<String> splitText = text.split(new RegExp(
               r"\s")); // https://stackoverflow.com/questions/45865989/dart-use-regexp-to-remove-whitespaces-from-string
           String username = splitText[1];
@@ -229,14 +226,11 @@ class _ChatPageState extends State<ChatPage> {
           }
 
           String body = splitText.sublist(2).join(" ");
-          print("recipient: " + username);
-          print("message: " + body);
 
           ws.channel.sink.add(
               'PRIVMSG {"nick":"' + username + '", "data":"' + body + '"}');
         }
       } else {
-        print("text is a regular message");
         ws.channel.sink.add('MSG {"data":"' + text + '"}');
       }
     }
@@ -278,6 +272,7 @@ class _ChatPageState extends State<ChatPage> {
         setState(() => messages.add(m));
         break;
       case "JOIN":
+        // TODO: implement join/leave for user list (visual)
         //Chatter c = new Chatter.fromJson(json.decode(wsResponse[1]));
         print("JOIN : " + wsResponse[1]);
         break;
@@ -295,7 +290,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   String determineLabel() {
-    if (nick == null || nick.isEmpty) {
+    if (nick == null || nick.isEmpty || nick == "Anonymous") {
       return "You need to be signed in to chat";
     } else {
       return 'Write something $nick ...';
@@ -384,7 +379,7 @@ class _ChatPageState extends State<ChatPage> {
               RaisedButton(
                 onPressed: () {
                   setState(() {
-                    nick = "";
+                    nick = "Anonymous";
                     jwt = "";
                     updateToken();
                   });
