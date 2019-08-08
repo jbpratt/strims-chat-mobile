@@ -37,7 +37,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<Map<String, Emote>> emotes;
   Storage storage = new Storage();
   String label;
-  Settings settings = new Settings();
+  Settings settings;
 
   Utilities utilities = new Utilities();
   void infoMsg(String msg) {
@@ -118,6 +118,7 @@ class _ChatPageState extends State<ChatPage> {
 
   void updateToken() {
     ws.updateToken(jwt);
+    //label = determineLabel();
   }
 
   void resetChannel() {
@@ -126,7 +127,7 @@ class _ChatPageState extends State<ChatPage> {
     listen();
   }
 
-  void resetOnBrowserClose() {
+  void resetOnPopupClose() {
     updateToken();
     resetChannel();
   }
@@ -166,6 +167,9 @@ class _ChatPageState extends State<ChatPage> {
     await showDialog(
         context: context,
         builder: (BuildContext context) {
+          if (nick != "Anonymous" && jwt.isNotEmpty) {
+            // TODO: remove the popup somehow
+          }
           return AlertDialog(
             title: new Text("Whoops!"),
             content: new Text("You must first sign in to chat"),
@@ -180,7 +184,7 @@ class _ChatPageState extends State<ChatPage> {
                 child: new Text("Close"),
                 onPressed: () {
                   Navigator.pop(context);
-                  this.resetOnBrowserClose();
+                  this.resetOnPopupClose();
                 },
               )
             ],

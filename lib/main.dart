@@ -8,11 +8,12 @@ import 'chat.dart';
 void main() => runApp(App());
 
 class App extends StatelessWidget {
+  Settings settings = new Settings();
   @override
   Widget build(BuildContext context) {
-    // TODO: add routes https://flutter.dev/docs/cookbook/navigation/navigate-with-arguments#3-register-the-widget-in-the-routes-table
+    //
     return ChangeNotifierProvider(
-        builder: (context) => SettingsNotifier(),
+        builder: (context) => SettingsNotifier(settings),
         child: MaterialApp(
           theme: ThemeData(
             brightness: Brightness.dark,
