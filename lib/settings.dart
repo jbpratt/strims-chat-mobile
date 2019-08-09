@@ -358,6 +358,7 @@ class SettingsNotifier extends ChangeNotifier {
   SettingsNotifier(this.settings);
 
   void updateSettings() {
+    this.settings.storeSettings();
     notifyListeners();
   }
 
@@ -372,21 +373,42 @@ class SettingsNotifier extends ChangeNotifier {
 
   void addUserTags(String user, String color) {
     this.settings.userTags.addAll({user: color});
-    notifyListeners();
+    updateSettings();
   }
 
   void addUsersIgnored(String user) {
     this.settings.usersIgnored.add(user);
-    notifyListeners();
+    updateSettings();
   }
 
   void addWordsHighlighted(String word) {
     this.settings.wordsHighlighted.add(word);
-    notifyListeners();
+    updateSettings();
   }
 
   void addWordsHidden(String word) {
-    this.settings.wordsHighlighted.add(word);
-    notifyListeners();
+    this.settings.wordsHidden.add(word);
+    updateSettings();
+  }
+
+// add ^ remove v
+  void removeUserTags(String user) {
+    this.settings.userTags.remove(user);
+    updateSettings();
+  }
+
+  void removeUsersIgnored(String user) {
+    this.settings.usersIgnored.remove(user);
+    updateSettings();
+  }
+
+  void removeWordsHighlighted(String word) {
+    this.settings.wordsHighlighted.remove(word);
+    updateSettings();
+  }
+
+  void removeWordsHidden(String word) {
+    this.settings.wordsHidden.remove(word);
+    updateSettings();
   }
 }
