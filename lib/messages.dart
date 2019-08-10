@@ -22,7 +22,7 @@ class _MessageListState extends State<MessageList> {
   List<Message> messages;
   Settings _settings;
 
-  _MessageListState(List<Message> messages);
+  _MessageListState(this.messages);
   @override
   Widget build(BuildContext context) {
     this._settings = Provider.of<SettingsNotifier>(context).settings;
@@ -39,9 +39,7 @@ class _MessageListState extends State<MessageList> {
             Message msg = widget._messages[index];
 
             return Card(
-                color: (msg.type == "PRIVMSG"
-                    ? _settings.privateCardColor
-                    : _settings.cardColor),
+                color: _settings.cardColor,
                 // TODO: do this properly
                 child: Container(
                     decoration: BoxDecoration(
@@ -82,22 +80,28 @@ class _MessageListItem extends ListTile {
                 )), // colour here somehow
               ),
             ),
-            subtitle:
-                Text(msg.type == "PRIVMSG" ? msg.nick + " whispered" : msg.nick,
+            subtitle: Padding(
+                padding: EdgeInsets.only(
+                  bottom: 8,
+                ),
+                child: Text.rich(TextSpan(
+                    text: msg.type == "PRIVMSG"
+                        ? msg.nick + " whispered"
+                        : msg.nick,
                     style: TextStyle(
-                      color: Utilities.flipColor(
-                          msg.type == "PRIVMSG"
-                              ? _settings.privateCardColor
-                              : _settings.cardColor,
-                          100),
-                    )),
+                      backgroundColor: msg.type == "PRIVMSG"
+                          ? Utilities.flipColor(_settings.cardColor, 50)
+                          : null,
+                      fontStyle:
+                          msg.type == "PRIVMSG" ? FontStyle.italic : null,
+                      color: msg.type == "PRIVMSG"
+                          ? Utilities.flipColor(
+                              Utilities.flipColor(_settings.cardColor, 50), 100)
+                          : Utilities.flipColor(_settings.cardColor, 100),
+                    )))),
             trailing: new IconButton(
               icon: Icon(Icons.more_vert),
-              color: Utilities.flipColor(
-                  (msg.type == "PRIVMSG"
-                      ? _settings.privateCardColor
-                      : _settings.cardColor),
-                  100),
+              color: Utilities.flipColor(_settings.cardColor, 100),
               onPressed: () {},
             ),
             onTap: () {});
@@ -134,15 +138,13 @@ class _MessageListItem extends ListTile {
                 children: messageToWidget(
                     val, settings, userNick, senderNick, msgType),
                 style: TextStyle(
-                    color: Utilities.flipColor(
-                        msgType == "PRIVMSG"
-                            ? settings.privateCardColor
-                            : settings.cardColor,
+                    color: Utilities.flipColor(settings.cardColor,
                         150), // TODO: implement a function for this
                     background: Paint()..color = Colors.transparent));
             output.add(x);
             break;
           case "emote":
+            // TODO: load imgs into array at start
             AssetImage img = AssetImage('assets/${val.data}');
             Image x = Image(
               image: img,

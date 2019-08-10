@@ -8,7 +8,8 @@ class Utilities {
     int g = color.green;
     int b = color.blue;
     double lum = color.computeLuminance();
-    if (lum > 0.3) {
+    // if the input color is brighter then 5% brightness, we  make the output darker
+    if (lum > 0.05) {
       offset *= -1;
     }
 
