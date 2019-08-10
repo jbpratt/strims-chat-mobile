@@ -22,5 +22,4 @@ static_analysis: &static_analysis
 jobs:
   include:
     - <<: *static_analysis
-    - stage: clean
     - stage: build
