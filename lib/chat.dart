@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
@@ -41,7 +40,6 @@ class _ChatPageState extends State<ChatPage> {
   Settings settings;
   SettingsNotifier settingsNotifier;
 
-  Utilities utilities = new Utilities();
   void infoMsg(String msg) {
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     Message m = Message.fromJson(

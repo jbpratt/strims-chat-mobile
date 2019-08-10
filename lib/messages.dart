@@ -14,16 +14,20 @@ class MessageList extends StatefulWidget {
   MessageList(this._messages, this._userNickname);
 
   @override
-  _MessageListState createState() => _MessageListState();
+  _MessageListState createState() => _MessageListState(_messages);
 }
 
 class _MessageListState extends State<MessageList> {
   final ScrollController _controller = ScrollController();
+  List<Message> messages;
+  Settings _settings;
 
-  Settings _settings; 
+  _MessageListState(List<Message> messages);
   @override
   Widget build(BuildContext context) {
     this._settings = Provider.of<SettingsNotifier>(context).settings;
+    this.messages.retainWhere((message) => message
+        .shouldShow(this._settings)); // remove all hidden ignored messages
     return Container(
         color: _settings.bgColor,
         child: ListView.builder(
@@ -41,7 +45,7 @@ class _MessageListState extends State<MessageList> {
                 // TODO: do this properly
                 child: Container(
                     decoration: BoxDecoration(
-                      border: msg.mentioned
+                      border: msg.mentioned || msg.hasKeyword
                           ? Border(
                               bottom: BorderSide(
                               color: _settings.privateCardColor,
@@ -49,8 +53,8 @@ class _MessageListState extends State<MessageList> {
                             ))
                           : null,
                     ),
-                    child:
-                        _MessageListItem(msg, this._settings, widget._userNickname)));
+                    child: _MessageListItem(
+                        msg, this._settings, widget._userNickname)));
           },
         ));
   }
@@ -124,7 +128,9 @@ class _MessageListItem extends ListTile {
         switch (val.type) {
           case "text":
             TextSpan x = TextSpan(
-                text: val.data.toString().trimLeft(), // TODO: fix whitespace to left when emote in message
+                text: val.data
+                    .toString()
+                    .trimLeft(), // TODO: fix whitespace to left when emote in message
                 children: messageToWidget(
                     val, settings, userNick, senderNick, msgType),
                 style: TextStyle(
@@ -243,24 +249,21 @@ class Message {
 
   @override
   String toString() {
-    return _recReturnMessageAsString(this.data);
+    return messageData;
   }
 
-  String _recReturnMessageAsString(MessageSegment message) {
-    String messageAsString = "";
-    if (message.subSegemnts != null) {
-      message.subSegemnts.forEach((subSegment) {
-        if (subSegment.subSegements != null) {
-          messageAsString += _recReturnMessageAsString(subSegment); // rec down
-
-        } else {
-          if (subSegment.data != null) {
-            messageAsString += subSegment.data;
-          }
-        }
-      });
+  bool shouldShow(Settings settings) {
+    for (String each in settings.wordsHidden) {
+      if (this.messageData.toLowerCase().contains(each.toLowerCase())) {
+        return false;
+      }
     }
-    return messageAsString;
+    for (String each in settings.usersIgnored) {
+      if (this.nick.toLowerCase().contains(each.toLowerCase())) {
+        return false;
+      }
+    }
+    return true;
   }
 
   String readTimestamp() {
@@ -552,6 +555,7 @@ class Message {
         break;
       }
     }
+    if (hasKwrd) {}
 
     return Message(
         messageData: msgString,
