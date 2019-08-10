@@ -4,10 +4,9 @@ import 'package:provider/provider.dart';
 import 'storage.dart';
 
 class SettingsRoute extends StatefulWidget {
-  // Map<String, bool> settings = new Map<String, bool>();
-  Settings settings;
+  final Settings settings;
   SettingsRoute(
-      this.settings); // SettingsRoute({Key key, this.settings}) : super(key: key){
+      this.settings); 
 
   @override
   _SettingsState createState() => new _SettingsState();
@@ -17,11 +16,6 @@ class _SettingsState extends State<SettingsRoute> {
   Storage storage = new Storage();
   Settings settings; // < holds everything
   SettingsNotifier settingsNotifier; //
-
-  @override
-  void initState() {
-    // this.settings = new Settings();
-  }
 
   //bool _showFlairs = false; @legacy
   // // ignoring notifications for now

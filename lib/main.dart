@@ -8,10 +8,9 @@ import 'chat.dart';
 void main() => runApp(App());
 
 class App extends StatelessWidget {
-  Settings settings = new Settings();
+  final Settings settings = new Settings();
   @override
   Widget build(BuildContext context) {
-    //
     return ChangeNotifierProvider(
         builder: (context) => SettingsNotifier(settings),
         child: MaterialApp(

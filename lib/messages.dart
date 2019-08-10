@@ -7,14 +7,20 @@ import 'settings.dart';
 import 'emotes.dart';
 import 'utilities.dart';
 
-class MessageList extends StatelessWidget {
-  final ScrollController _controller = ScrollController();
+class MessageList extends StatefulWidget {
   final List<Message> _messages;
   final String _userNickname;
-  Settings _settings; // < imported from ?
 
-  MessageList(this._messages, this._userNickname) {
-  }
+  MessageList(this._messages, this._userNickname);
+
+  @override
+  _MessageListState createState() => _MessageListState();
+}
+
+class _MessageListState extends State<MessageList> {
+  final ScrollController _controller = ScrollController();
+
+  Settings _settings; 
   @override
   Widget build(BuildContext context) {
     this._settings = Provider.of<SettingsNotifier>(context).settings;
@@ -24,9 +30,9 @@ class MessageList extends StatelessWidget {
           shrinkWrap: true,
           reverse: true,
           controller: _controller,
-          itemCount: _messages.length,
+          itemCount: widget._messages.length,
           itemBuilder: (BuildContext ctx, int index) {
-            Message msg = _messages[index];
+            Message msg = widget._messages[index];
 
             return Card(
                 color: (msg.type == "PRIVMSG"
@@ -44,15 +50,15 @@ class MessageList extends StatelessWidget {
                           : null,
                     ),
                     child:
-                        _MessageListItem(msg, this._settings, _userNickname)));
+                        _MessageListItem(msg, this._settings, widget._userNickname)));
           },
         ));
   }
 }
 
 class _MessageListItem extends ListTile {
-  Settings _settings;
-  String _userNickname;
+  final Settings _settings;
+  final String _userNickname;
   _MessageListItem(Message msg, this._settings, this._userNickname)
       : super(
             dense: true,
