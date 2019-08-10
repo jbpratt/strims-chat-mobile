@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
-import 'package:majora/settings.dart';
-import 'package:majora/storage.dart';
-import 'package:majora/wsclient.dart';
+import 'settings.dart';
+import 'storage.dart';
+import 'wsclient.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'browser.dart';

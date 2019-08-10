@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:majora/settings.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:majora/emotes.dart';
-import 'package:majora/utilities.dart';
+import 'settings.dart';
+import 'emotes.dart';
+import 'utilities.dart';
 
 class MessageList extends StatelessWidget {
   final ScrollController _controller = ScrollController();
