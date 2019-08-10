@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:majora/storage.dart';
 import 'package:provider/provider.dart';
+import 'storage.dart';
 
 class SettingsRoute extends StatefulWidget {
   // Map<String, bool> settings = new Map<String, bool>();
