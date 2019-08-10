@@ -43,13 +43,10 @@ class _MessageListState extends State<MessageList> {
                 // TODO: do this properly
                 child: Container(
                     decoration: BoxDecoration(
-                      border: msg.mentioned || msg.hasKeyword
-                          ? Border(
-                              bottom: BorderSide(
-                              color: _settings.privateCardColor,
-                              width: 5,
-                            ))
-                          : null,
+                      color: msg.mentioned || msg.hasKeyword
+                          ? Color.fromARGB(200, 0, 0, 200)
+                          : null, // TODO: add a setting colour here
+                      border: new Border(left: new BorderSide(color: msg.getTagColor(this._settings, msg.nick), width: 3)),
                     ),
                     child: _MessageListItem(
                         msg, this._settings, widget._userNickname)));
@@ -268,6 +265,53 @@ class Message {
     return true;
   }
 
+  Color getTagColor(Settings settings, String messageNick) {
+    int i = 0;
+    for (var tag in settings.userTags.keys) {
+      if (tag == messageNick) {
+        return stringToColor(settings.userTags.values.elementAt(i));
+      }
+      i++;
+    }
+    return Color.fromARGB(0, 0, 0, 0);
+  }
+
+  Color stringToColor(String colorString) {
+    switch (colorString) {
+      case "green":
+        return Colors.green;
+        break;
+      case "yellow":
+        return Colors.yellow;
+        break;
+      case "orange":
+        return Colors.orange;
+        break;
+      case "red":
+        return Colors.red;
+        break;
+      case "purple":
+        return Colors.purple;
+        break;
+      case "blue":
+        return Colors.blue;
+        break;
+      case "sky":
+        return Colors.cyan;
+        break;
+      case "lime":
+        return Colors.lime;
+        break;
+      case "pink":
+        return Colors.pink;
+        break;
+      case "black":
+        return Colors.grey;
+        break;
+    }
+    return Color.fromARGB(0, 0, 0, 0); // transparent black
+  }
+
   String readTimestamp() {
     if (this.timestamp != 0) {
       DateTime d =
@@ -431,6 +475,7 @@ class Message {
     _tokenizeLinks(MessageSegment base) {
       if ((base.type == 'text' || base.type == 'spoiler') &&
           base.subSegemnts == null) {
+        // TODO: improve regex
         RegExp reg = new RegExp(
             r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
         List<MessageSegment> newSegments = new List<MessageSegment>();
