@@ -14,16 +14,20 @@ class MessageList extends StatefulWidget {
   MessageList(this._messages, this._userNickname);
 
   @override
-  _MessageListState createState() => _MessageListState();
+  _MessageListState createState() => _MessageListState(_messages);
 }
 
 class _MessageListState extends State<MessageList> {
   final ScrollController _controller = ScrollController();
+  List<Message> messages;
+  Settings _settings;
 
-  Settings _settings; 
+  _MessageListState(this.messages);
   @override
   Widget build(BuildContext context) {
     this._settings = Provider.of<SettingsNotifier>(context).settings;
+    this.messages.retainWhere((message) => message
+        .shouldShow(this._settings)); // remove all hidden ignored messages
     return Container(
         color: _settings.bgColor,
         child: ListView.builder(
@@ -35,22 +39,17 @@ class _MessageListState extends State<MessageList> {
             Message msg = widget._messages[index];
 
             return Card(
-                color: (msg.type == "PRIVMSG"
-                    ? _settings.privateCardColor
-                    : _settings.cardColor),
+                color: _settings.cardColor,
                 // TODO: do this properly
                 child: Container(
                     decoration: BoxDecoration(
-                      border: msg.mentioned
-                          ? Border(
-                              bottom: BorderSide(
-                              color: _settings.privateCardColor,
-                              width: 5,
-                            ))
-                          : null,
+                      color: msg.mentioned || msg.hasKeyword
+                          ? Color.fromARGB(200, 0, 0, 200)
+                          : null, // TODO: add a setting colour here
+                      border: new Border(left: new BorderSide(color: msg.getTagColor(this._settings, msg.nick), width: 3)),
                     ),
-                    child:
-                        _MessageListItem(msg, this._settings, widget._userNickname)));
+                    child: _MessageListItem(
+                        msg, this._settings, widget._userNickname)));
           },
         ));
   }
@@ -78,22 +77,28 @@ class _MessageListItem extends ListTile {
                 )), // colour here somehow
               ),
             ),
-            subtitle:
-                Text(msg.type == "PRIVMSG" ? msg.nick + " whispered" : msg.nick,
+            subtitle: Padding(
+                padding: EdgeInsets.only(
+                  bottom: 8,
+                ),
+                child: Text.rich(TextSpan(
+                    text: msg.type == "PRIVMSG"
+                        ? msg.nick + " whispered"
+                        : msg.nick,
                     style: TextStyle(
-                      color: Utilities.flipColor(
-                          msg.type == "PRIVMSG"
-                              ? _settings.privateCardColor
-                              : _settings.cardColor,
-                          100),
-                    )),
+                      backgroundColor: msg.type == "PRIVMSG"
+                          ? Utilities.flipColor(_settings.cardColor, 50)
+                          : null,
+                      fontStyle:
+                          msg.type == "PRIVMSG" ? FontStyle.italic : null,
+                      color: msg.type == "PRIVMSG"
+                          ? Utilities.flipColor(
+                              Utilities.flipColor(_settings.cardColor, 50), 100)
+                          : Utilities.flipColor(_settings.cardColor, 100),
+                    )))),
             trailing: new IconButton(
               icon: Icon(Icons.more_vert),
-              color: Utilities.flipColor(
-                  (msg.type == "PRIVMSG"
-                      ? _settings.privateCardColor
-                      : _settings.cardColor),
-                  100),
+              color: Utilities.flipColor(_settings.cardColor, 100),
               onPressed: () {},
             ),
             onTap: () {});
@@ -124,19 +129,19 @@ class _MessageListItem extends ListTile {
         switch (val.type) {
           case "text":
             TextSpan x = TextSpan(
-                text: val.data.toString().trimLeft(), // TODO: fix whitespace to left when emote in message
+                text: val.data
+                    .toString()
+                    .trimLeft(), // TODO: fix whitespace to left when emote in message
                 children: messageToWidget(
                     val, settings, userNick, senderNick, msgType),
                 style: TextStyle(
-                    color: Utilities.flipColor(
-                        msgType == "PRIVMSG"
-                            ? settings.privateCardColor
-                            : settings.cardColor,
+                    color: Utilities.flipColor(settings.cardColor,
                         150), // TODO: implement a function for this
                     background: Paint()..color = Colors.transparent));
             output.add(x);
             break;
           case "emote":
+            // TODO: load imgs into array at start
             AssetImage img = AssetImage('assets/${val.data}');
             Image x = Image(
               image: img,
@@ -243,24 +248,68 @@ class Message {
 
   @override
   String toString() {
-    return _recReturnMessageAsString(this.data);
+    return messageData;
   }
 
-  String _recReturnMessageAsString(MessageSegment message) {
-    String messageAsString = "";
-    if (message.subSegemnts != null) {
-      message.subSegemnts.forEach((subSegment) {
-        if (subSegment.subSegements != null) {
-          messageAsString += _recReturnMessageAsString(subSegment); // rec down
-
-        } else {
-          if (subSegment.data != null) {
-            messageAsString += subSegment.data;
-          }
-        }
-      });
+  bool shouldShow(Settings settings) {
+    for (String each in settings.wordsHidden) {
+      if (this.messageData.toLowerCase().contains(each.toLowerCase())) {
+        return false;
+      }
     }
-    return messageAsString;
+    for (String each in settings.usersIgnored) {
+      if (this.nick.toLowerCase().contains(each.toLowerCase())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Color getTagColor(Settings settings, String messageNick) {
+    int i = 0;
+    for (var tag in settings.userTags.keys) {
+      if (tag == messageNick) {
+        return stringToColor(settings.userTags.values.elementAt(i));
+      }
+      i++;
+    }
+    return Color.fromARGB(0, 0, 0, 0);
+  }
+
+  Color stringToColor(String colorString) {
+    switch (colorString) {
+      case "green":
+        return Colors.green;
+        break;
+      case "yellow":
+        return Colors.yellow;
+        break;
+      case "orange":
+        return Colors.orange;
+        break;
+      case "red":
+        return Colors.red;
+        break;
+      case "purple":
+        return Colors.purple;
+        break;
+      case "blue":
+        return Colors.blue;
+        break;
+      case "sky":
+        return Colors.cyan;
+        break;
+      case "lime":
+        return Colors.lime;
+        break;
+      case "pink":
+        return Colors.pink;
+        break;
+      case "black":
+        return Colors.grey;
+        break;
+    }
+    return Color.fromARGB(0, 0, 0, 0); // transparent black
   }
 
   String readTimestamp() {
@@ -426,6 +475,7 @@ class Message {
     _tokenizeLinks(MessageSegment base) {
       if ((base.type == 'text' || base.type == 'spoiler') &&
           base.subSegemnts == null) {
+        // TODO: improve regex
         RegExp reg = new RegExp(
             r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
         List<MessageSegment> newSegments = new List<MessageSegment>();
@@ -552,6 +602,7 @@ class Message {
         break;
       }
     }
+    if (hasKwrd) {}
 
     return Message(
         messageData: msgString,

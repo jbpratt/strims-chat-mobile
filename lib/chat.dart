@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
@@ -38,8 +38,8 @@ class _ChatPageState extends State<ChatPage> {
   Storage storage = new Storage();
   String label;
   Settings settings;
+  SettingsNotifier settingsNotifier;
 
-  Utilities utilities = new Utilities();
   void infoMsg(String msg) {
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     Message m = Message.fromJson(
@@ -192,6 +192,168 @@ class _ChatPageState extends State<ChatPage> {
         });
   }
 
+  void handleTagHighlightIgnore(String input) {
+    List colors = [
+      "green",
+      "yellow",
+      "orange",
+      "red",
+      "purple",
+      "blue",
+      "sky",
+      "lime",
+      "pink",
+      "black"
+    ];
+    //TODO: regex this
+    // prepare yourself for spaghetti
+    String inputNoWhitespace = input;
+    bool test = true;
+    while (test) {
+      if (inputNoWhitespace.contains("  ")) {
+        inputNoWhitespace = inputNoWhitespace.replaceAll("  ", " ");
+      } else {
+        test = false;
+      }
+    }
+    List output = inputNoWhitespace.split(" ");
+    switch (output[0].toString().replaceAll("/", "")) {
+      case "highlight":
+        if (output.length == 1 || output[1].isEmpty) {
+          infoMsg(settings.wordsHighlighted.length < 1
+              ? "No highlighted words, syntax : \/highlight {word}"
+              : "Highlighted words : " +
+                  settings.wordsHighlighted
+                      .toString()
+                      .replaceAll("{", "")
+                      .replaceAll("}", ""));
+        } else if (output.length >= 2) {
+          infoMsg("Highlighting " + output[1]);
+          this.settingsNotifier.addWordsHighlighted(output[1]);
+        }
+        break;
+      case "unhighlight":
+        if (output.length == 1 || output[1].isEmpty) {
+          infoMsg(settings.wordsHighlighted.length < 1
+              ? "No highlighted words, syntax : \/unhighlight {word}"
+              : "Highlighted words : " +
+                  settings.wordsHighlighted
+                      .toString()
+                      .replaceAll("{", "")
+                      .replaceAll("}", ""));
+        } else if (output.length >= 2) {
+          infoMsg("No longer highlighting " + output[1]);
+          this.settingsNotifier.removeWordsHighlighted(output[1]);
+        }
+        break;
+      case "tag":
+        if (output.length == 1 || output[1].isEmpty) {
+          infoMsg(settings.userTags.length < 1
+              ? "No tagged users, syntax : \/tag {user} {color}" +
+                  ". Available colors: " +
+                  colors.toString().replaceAll("[", "").replaceAll("]", "")
+              : "Highlighted users : " +
+                  settings.userTags
+                      .toString()
+                      .replaceAll("{", "")
+                      .replaceAll("}", "") +
+                  ". Available colors: " +
+                  colors.toString().replaceAll("[", "").replaceAll("]", ""));
+        } else if (output.length == 2 || output[2].isEmpty) {
+          var color = colors[Random().nextInt(colors.length - 1)];
+          infoMsg("Tagged " + output[1] + " as " + color);
+          this.settingsNotifier.addUserTags(output[1], color);
+        } else if (output.length >= 3) {
+          String color = "";
+          if (!colors.contains(output[2].toLowerCase())) {
+            color = colors[Random().nextInt(colors.length - 1)];
+          } else {
+            color = output[2].toLowerCase();
+          }
+          infoMsg("Tagged " + output[1] + " as " + color);
+          this.settingsNotifier.addUserTags(output[1], color);
+        }
+        break;
+      case "untag":
+        if (output.length == 1 || output[1].isEmpty) {
+          infoMsg(settings.userTags.length < 1
+              ? "No tagged users, syntax : \/untag {user} {color}" +
+                  ". Available colors: " +
+                  colors.toString().replaceAll("[", "").replaceAll("]", "")
+              : "Highlighted users : " +
+                  settings.userTags
+                      .toString()
+                      .replaceAll("{", "")
+                      .replaceAll("}", "") +
+                  ". Available colors: " +
+                  colors.toString().replaceAll("[", "").replaceAll("]", ""));
+        } else if (output.length >= 2) {
+          infoMsg("Un-tagged " + output[1]);
+          this.settingsNotifier.removeUserTags(output[1]);
+        }
+        break;
+      case "ignore":
+        if (output.length == 1 || output[1].isEmpty) {
+          infoMsg(settings.usersIgnored.length < 1
+              ? "Your ignore list is empty, syntax : \/ignore {user}"
+              : "Ignored Users : " +
+                  settings.usersIgnored
+                      .toString()
+                      .replaceAll("{", "")
+                      .replaceAll("}", ""));
+        } else if (output.length >= 2) {
+          infoMsg("Ignoring " + output[1]);
+          this.settingsNotifier.addUsersIgnored(output[1]);
+        }
+        break;
+      case "unignore":
+        if (output.length == 1 || output[1].isEmpty) {
+          infoMsg(settings.usersIgnored.length < 1
+              ? "Your ignore list is empty, syntax : \/unignore {user}"
+              : "Ignored Users : " +
+                  settings.usersIgnored
+                      .toString()
+                      .replaceAll("{", "")
+                      .replaceAll("}", ""));
+        } else if (output.length >= 2) {
+          infoMsg(output[1] + " has been removed from your ignore list");
+          this.settingsNotifier.removeUsersIgnored(output[1]);
+        }
+        break;
+      case "hide":
+        if (output.length == 1 || output[1].isEmpty) {
+          infoMsg(settings.wordsHidden.length < 1
+              ? "You have no hidden words : \/hide {word}"
+              : "Hidden words : " +
+                  settings.wordsHidden
+                      .toString()
+                      .replaceAll("{", "")
+                      .replaceAll("}", ""));
+        } else if (output.length >= 2) {
+          infoMsg("Hiding messages including " + output[1]);
+          this.settingsNotifier.addWordsHidden(output[1]);
+        }
+        break;
+      case "unhide":
+        if (output.length == 1 || output[1].isEmpty) {
+          infoMsg(settings.wordsHidden.length < 1
+              ? "You have no hidden words : \/unhide {word}"
+              : "Hidden words : " +
+                  settings.wordsHidden
+                      .toString()
+                      .replaceAll("{", "")
+                      .replaceAll("}", ""));
+        } else if (output.length >= 2) {
+          infoMsg("No longer hiding messages including " + output[1]);
+          this.settingsNotifier.removeWordsHidden(output[1]);
+        }
+        break;
+      default:
+        infoMsg("please try re-typing your command");
+        break;
+    }
+  }
+
   void sendData() {
     if (jwt == null || jwt == "") {
       _showLoginDialog();
@@ -203,13 +365,18 @@ class _ChatPageState extends State<ChatPage> {
       // if user is auth as moderator // '/ban' or '/mute'
 
       if (text[0] == '/') {
+        // TODO: trim left for function check ?
+        //TODO: lowercase functions ?
+
         // TODO: handle all "/" functions
         if (text.contains(new RegExp(
+            r"^\/((highlight)|(unhighlight)|(tag)|(untag)|(ignore)|(unignore)|(hide)|(unhide))"))) {
+          handleTagHighlightIgnore(text);
+        } else if (text.contains(new RegExp(
             r"^\/(w|(whisper)|(message)|(msg)|t|(tell)|(notify))"))) {
           // is private message
 
-          List<String> splitText = text.split(new RegExp(
-              r"\s")); // https://stackoverflow.com/questions/45865989/dart-use-regexp-to-remove-whitespaces-from-string
+          List<String> splitText = text.split(new RegExp(r"\s"));
           String username = splitText[1];
 
           bool found = false;
@@ -304,6 +471,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     label = determineLabel();
+    this.settingsNotifier = Provider.of<SettingsNotifier>(context);
     this.settings = Provider.of<SettingsNotifier>(context).settings;
     Color headerColor = Utilities.flipColor(settings.bgColor, 100);
     return Scaffold(
