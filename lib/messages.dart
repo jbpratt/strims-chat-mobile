@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'settings.dart';
 import 'emotes.dart';
@@ -12,11 +13,11 @@ class MessageList extends StatelessWidget {
   final String _userNickname;
   Settings _settings; // < imported from ?
 
-  MessageList(this._messages, this._settings, this._userNickname) {
-    // print("miyanobird:" + this._settings.toggles.toString()); // TODO: remove
+  MessageList(this._messages, this._userNickname) {
   }
   @override
   Widget build(BuildContext context) {
+    this._settings = Provider.of<SettingsNotifier>(context).settings;
     return Container(
         color: _settings.bgColor,
         child: ListView.builder(
@@ -105,10 +106,10 @@ class _MessageListItem extends ListTile {
     if (segment.subSegements != null) {
       segment.subSegements.forEach((val) {
         // TODO: get this from the settings class
-        var bgColour = Colors.blueGrey; // default colour
+        var bgColor = Colors.blueGrey; // default colour
 
         if (userNick == senderNick) {
-          bgColour = Colors.amber;
+          bgColor = Colors.amber;
         } else {
           if (userNick == null || userNick.isEmpty) {
             // messsage contains anonymous
@@ -117,7 +118,7 @@ class _MessageListItem extends ListTile {
         switch (val.type) {
           case "text":
             TextSpan x = TextSpan(
-                text: val.data.toString().trimLeft(),
+                text: val.data.toString().trimLeft(), // TODO: fix whitespace to left when emote in message
                 children: messageToWidget(
                     val, settings, userNick, senderNick, msgType),
                 style: TextStyle(
@@ -196,7 +197,7 @@ class _MessageListItem extends ListTile {
                 text: val.data.toString(),
                 style: TextStyle(
                     color: Colors.grey[400],
-                    background: Paint()..color = bgColour));
+                    background: Paint()..color = bgColor));
             output.add(x);
             break;
           default:

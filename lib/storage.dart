@@ -8,17 +8,14 @@ class Storage {
   Storage() {
     this._storage = new FlutterSecureStorage();
   }
-  void resetSettings() {
-    this._settings = new Map<String, String>();
-  }
 
   Future<void> initS() async {
-    await loadSettings();
+    this._settings= await this._storage.readAll();
+
   }
 
-  Future<void> loadSettings() async {
+   Future<void> loadSettings() async {
     this._settings = await this._storage.readAll();
-    //Rprint(this._settings);
   }
 
   void deleteAll() async {

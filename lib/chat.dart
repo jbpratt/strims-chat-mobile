@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:provider/provider.dart';
 import 'settings.dart';
 import 'storage.dart';
 import 'wsclient.dart';
@@ -36,7 +37,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<Map<String, Emote>> emotes;
   Storage storage = new Storage();
   String label;
-  Settings settings = new Settings();
+  Settings settings;
 
   Utilities utilities = new Utilities();
   void infoMsg(String msg) {
@@ -117,6 +118,7 @@ class _ChatPageState extends State<ChatPage> {
 
   void updateToken() {
     ws.updateToken(jwt);
+    //label = determineLabel();
   }
 
   void resetChannel() {
@@ -125,7 +127,7 @@ class _ChatPageState extends State<ChatPage> {
     listen();
   }
 
-  void resetOnBrowserClose() {
+  void resetOnPopupClose() {
     updateToken();
     resetChannel();
   }
@@ -165,6 +167,9 @@ class _ChatPageState extends State<ChatPage> {
     await showDialog(
         context: context,
         builder: (BuildContext context) {
+          if (nick != "Anonymous" && jwt.isNotEmpty) {
+            // TODO: remove the popup somehow
+          }
           return AlertDialog(
             title: new Text("Whoops!"),
             content: new Text("You must first sign in to chat"),
@@ -179,7 +184,7 @@ class _ChatPageState extends State<ChatPage> {
                 child: new Text("Close"),
                 onPressed: () {
                   Navigator.pop(context);
-                  this.resetOnBrowserClose();
+                  this.resetOnPopupClose();
                 },
               )
             ],
@@ -299,9 +304,8 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     label = determineLabel();
-
+    this.settings = Provider.of<SettingsNotifier>(context).settings;
     Color headerColor = Utilities.flipColor(settings.bgColor, 100);
-    // SettingsRoute settingsRoute = SettingsRoute(); // TODO: remove this
     return Scaffold(
         appBar: new AppBar(
           iconTheme: new IconThemeData(
@@ -348,7 +352,7 @@ class _ChatPageState extends State<ChatPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => SettingsRoute(
-                            settings), // TODO: save to storage on close of settings widget
+                            settings), // TODO: fix settings widget position in tree
                       ));
                 },
               ),
@@ -432,8 +436,7 @@ class _ChatPageState extends State<ChatPage> {
                 ]),
           ),
           Expanded(
-            child: ListView(
-                children: <Widget>[MessageList(messages, settings, nick)]),
+            child: ListView(children: <Widget>[MessageList(messages, nick)]),
           )
         ]));
   }
