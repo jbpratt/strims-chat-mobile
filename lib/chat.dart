@@ -40,6 +40,21 @@ class _ChatPageState extends State<ChatPage> {
   Settings settings;
   SettingsNotifier settingsNotifier;
 
+  // add message , check if message & last in list is same emote 
+  // if combo, adds combo message // else just adds message
+  void addMessage(Message message) {
+    if (isNotCombo(message)) {
+      messages.add(message);
+      return;
+    }
+    if (messages.last.messageData == message.messageData) {
+      Message m = comboMessage(message.messageData,
+          messages.last.comboCount == null ? 2 : messages.last.comboCount + 1);
+      messages.removeLast();
+      messages.add(m);
+    }
+  }
+
   void infoMsg(String msg) {
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     Message m = Message.fromJson(
@@ -49,7 +64,28 @@ class _ChatPageState extends State<ChatPage> {
         this.settings,
         nick);
 
-    setState(() => messages.add(m));
+    setState(() => addMessage(m));
+  }
+
+  bool isNotCombo(Message message) {
+    if (messages.isEmpty ||
+        !message.isOnlyEmote() ||
+        messages.last.messageData != message.messageData) {
+      return true;
+    }
+    return false;
+  }
+
+  Message comboMessage(String emote, int combo) {
+    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    Message m = Message.fromJson(
+        "MSG",
+        json.decode(
+            '{"nick":"$combo X C-C-C-COMBO","features":[],"timestamp":$timestamp,"data":"$emote"}'),
+        this.settings,
+        nick);
+    m.comboCount = combo;
+    return m;
   }
 
   Future<String> _getUsername(String jwt) async {
@@ -435,12 +471,12 @@ class _ChatPageState extends State<ChatPage> {
       case "MSG":
         Message m = new Message.fromJson(
             wsResponse[0], json.decode(wsResponse[1]), this.settings, nick);
-        setState(() => messages.add(m));
+        setState(() => addMessage(m));
         break;
       case "PRIVMSG":
         Message m = new Message.fromJson(
             wsResponse[0], json.decode(wsResponse[1]), this.settings, nick);
-        setState(() => messages.add(m));
+        setState(() => addMessage(m));
         break;
       case "JOIN":
         // TODO: implement join/leave for user list (visual)
