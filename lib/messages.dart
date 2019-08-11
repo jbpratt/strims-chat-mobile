@@ -46,7 +46,10 @@ class _MessageListState extends State<MessageList> {
                       color: msg.mentioned || msg.hasKeyword
                           ? Color.fromARGB(200, 0, 0, 200)
                           : null, // TODO: add a setting colour here
-                      border: new Border(left: new BorderSide(color: msg.getTagColor(this._settings, msg.nick), width: 3)),
+                      border: new Border(
+                          left: new BorderSide(
+                              color: msg.getTagColor(this._settings, msg.nick),
+                              width: 3)),
                     ),
                     child: _MessageListItem(
                         msg, this._settings, widget._userNickname)));
@@ -141,14 +144,8 @@ class _MessageListItem extends ListTile {
             output.add(x);
             break;
           case "emote":
-            // TODO: load imgs into array at start
-            AssetImage img = AssetImage('assets/${val.data}');
-            Image x = Image(
-              image: img,
-              height: 16,
-            );
             output.add(WidgetSpan(
-              child: x,
+              child: kEmotes["${val.data}"].img,
             ));
             break;
           case "url":

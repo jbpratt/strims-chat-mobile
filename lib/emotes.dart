@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 
 final String kEmoteAddress =
@@ -9,9 +11,10 @@ Map<String, Emote> kEmotes = new Map<String, Emote>();
 
 class Emote {
   String name;
-  String path;
+  Image img;
+  //AssetImage img;
 
-  Emote({this.name, this.path});
+  Emote({this.name, this.img});
 }
 
 Future<Map<String, Emote>> getEmotes() async {
@@ -19,9 +22,15 @@ Future<Map<String, Emote>> getEmotes() async {
   if (response.statusCode == 200) {
     var jsonResponse = jsonDecode(response.body);
     List<dynamic> y = jsonResponse['default'];
-    Map<String,Emote> out = new Map<String,Emote>();
+    Map<String, Emote> out = new Map<String, Emote>();
     for (int i = 0; i < y.length; i++) {
-      out[y[i]] = Emote(name: y[i], path: '/assets/${y[i]}.png');
+      var x = AssetImage('assets/${y[i]}');
+      out[y[i]] = Emote(
+          name: y[i],
+          img: Image(
+            image: x,
+            height: 16,
+          ));
     }
     return out;
   } else {
