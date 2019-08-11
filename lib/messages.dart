@@ -37,7 +37,6 @@ class _MessageListState extends State<MessageList> {
           itemCount: widget._messages.length,
           itemBuilder: (BuildContext ctx, int index) {
             Message msg = widget._messages[index];
-
             return Card(
                 color: _settings.cardColor,
                 // TODO: do this properly
@@ -231,6 +230,7 @@ class Message {
   bool mentioned;
   Settings settings;
   String userNickname;
+  int comboCount;
   static const List linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
   Message(
       {this.type,
@@ -246,6 +246,15 @@ class Message {
   @override
   String toString() {
     return messageData;
+  }
+
+  bool isOnlyEmote() {
+    if (this.data.type == "regular" || this.data.subSegemnts.length == 1) {
+      if (this.data.subSegements[0].type == "emote") {
+        return true;
+      }
+    }
+    return false;
   }
 
   bool shouldShow(Settings settings) {

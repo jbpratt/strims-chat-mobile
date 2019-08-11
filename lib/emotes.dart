@@ -12,7 +12,6 @@ Map<String, Emote> kEmotes = new Map<String, Emote>();
 class Emote {
   String name;
   Image img;
-  //AssetImage img;
 
   Emote({this.name, this.img});
 }
@@ -24,7 +23,7 @@ Future<Map<String, Emote>> getEmotes() async {
     List<dynamic> y = jsonResponse['default'];
     Map<String, Emote> out = new Map<String, Emote>();
     for (int i = 0; i < y.length; i++) {
-      var x = AssetImage('assets/${y[i]}');
+      AssetImage x = AssetImage('assets/${y[i]}');
       out[y[i]] = Emote(
           name: y[i],
           img: Image(
