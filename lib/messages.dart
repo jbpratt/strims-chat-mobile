@@ -231,6 +231,7 @@ class Message {
   Settings settings;
   String userNickname;
   int comboCount;
+  bool hasComboed;
   static const List linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
   Message(
       {this.type,
@@ -249,7 +250,7 @@ class Message {
   }
 
   bool isOnlyEmote() {
-    if (this.data.type == "regular" || this.data.subSegemnts.length == 1) {
+    if (this.data.type == "regular" && this.data.subSegemnts.length == 1) {
       if (this.data.subSegements[0].type == "emote") {
         return true;
       }
@@ -279,7 +280,7 @@ class Message {
       }
       i++;
     }
-    return Color.fromARGB(0, 0, 0, 0);
+    return Colors.transparent;
   }
 
   Color stringToColor(String colorString) {
@@ -315,7 +316,7 @@ class Message {
         return Colors.grey;
         break;
     }
-    return Color.fromARGB(0, 0, 0, 0); // transparent black
+    return Colors.transparent;
   }
 
   String readTimestamp() {
