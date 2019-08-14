@@ -508,6 +508,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   _sendComboEmote() {
+    if (jwt == null || jwt == "") {
+      _showLoginDialog();
+      return;
+    }
     if (this.messages.last.isOnlyEmote()) {
       ws.channel.sink
           .add('MSG {"data":"' + this.messages.last.messageData + '"}');
