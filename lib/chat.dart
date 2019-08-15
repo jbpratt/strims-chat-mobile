@@ -40,7 +40,7 @@ class _ChatPageState extends State<ChatPage> {
   Settings settings;
   SettingsNotifier settingsNotifier;
 
-  // add message , check if message & last in list is same emote 
+  // add message , check if message & last in list is same emote
   // if combo, adds combo message // else just adds message
   void addMessage(Message message) {
     if (isNotCombo(message)) {
@@ -50,6 +50,9 @@ class _ChatPageState extends State<ChatPage> {
     if (messages.last.messageData == message.messageData) {
       Message m = comboMessage(message.messageData,
           messages.last.comboCount == null ? 2 : messages.last.comboCount + 1);
+      if (messages.last.hasComboed != null || message.nick==nick) {
+        m.hasComboed = true;
+      }
       messages.removeLast();
       messages.add(m);
     }
@@ -504,13 +507,47 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  _sendComboEmote() {
+    if (jwt == null || jwt == "") {
+      _showLoginDialog();
+      return;
+    }
+    if (this.messages.last.isOnlyEmote()) {
+      ws.channel.sink
+          .add('MSG {"data":"' + this.messages.last.messageData + '"}');
+    }
+  }
+
+  bool _isComboButtonShown() {
+    if (messages.isNotEmpty && messages.last.isOnlyEmote()) {
+      if (messages.last.hasComboed != null || messages.last.nick == nick) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     label = determineLabel();
     this.settingsNotifier = Provider.of<SettingsNotifier>(context);
     this.settings = Provider.of<SettingsNotifier>(context).settings;
+
     Color headerColor = Utilities.flipColor(settings.bgColor, 100);
     return Scaffold(
+        floatingActionButton: _isComboButtonShown()
+            ? FloatingActionButton(
+                onPressed: _sendComboEmote,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints.expand(),
+                  child: kEmotes[messages.last.messageData.split(":")[0]]
+                      .img, // TODO : remove when emote modifiers are added
+                ),
+                backgroundColor: Colors.transparent)
+            : null,
         appBar: new AppBar(
           iconTheme: new IconThemeData(
             color: Utilities.flipColor(headerColor, 100),
