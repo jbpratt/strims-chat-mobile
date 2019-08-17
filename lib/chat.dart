@@ -44,13 +44,22 @@ class _ChatPageState extends State<ChatPage> {
   // if combo, adds combo message // else just adds message
   void addMessage(Message message) {
     if (isNotCombo(message)) {
+      if (messages.isNotEmpty) {
+        if (messages.length > settings.maxMessages) {
+          messages.removeRange(
+              (messages.length - settings.batchDeleteAmount < 0)
+                  ? 0
+                  : messages.length - settings.batchDeleteAmount,
+              messages.length);
+        }
+      }
       messages.add(message);
       return;
     }
     if (messages.last.messageData == message.messageData) {
       Message m = comboMessage(message.messageData,
           messages.last.comboCount == null ? 2 : messages.last.comboCount + 1);
-      if (messages.last.hasComboed != null || message.nick==nick) {
+      if (messages.last.hasComboed != null || message.nick == nick) {
         m.hasComboed = true;
       }
       messages.removeLast();
@@ -157,7 +166,6 @@ class _ChatPageState extends State<ChatPage> {
 
   void updateToken() {
     ws.updateToken(jwt);
-    //label = determineLabel();
   }
 
   void resetChannel() {
@@ -484,10 +492,10 @@ class _ChatPageState extends State<ChatPage> {
       case "JOIN":
         // TODO: implement join/leave for user list (visual)
         //Chatter c = new Chatter.fromJson(json.decode(wsResponse[1]));
-        print("JOIN : " + wsResponse[1]);
+        // print("JOIN : " + wsResponse[1]);
         break;
       case "QUIT":
-        print("QUIT : " + wsResponse[1]);
+        // print("QUIT : " + wsResponse[1]);
         break;
       default:
     }
