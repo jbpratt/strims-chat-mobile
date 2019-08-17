@@ -43,13 +43,16 @@ class _MessageListState extends State<MessageList> {
                 // TODO: do this properly
                 child: Container(
                     decoration: BoxDecoration(
-                      color: msg.mentioned || msg.hasKeyword
-                          ? Color.fromARGB(200, 0, 0, 200)
-                          : null, // TODO: add a setting colour here
-                      border: new Border(
-                          left: new BorderSide(
-                              color: msg.getTagColor(this._settings, msg.nick),
-                              width: 3)),
+                      borderRadius: new BorderRadius.all(Radius.circular(4)),
+                      gradient: new LinearGradient(stops: [
+                        0.02,
+                        0.02
+                      ], colors: [
+                        msg.getTagColor(this._settings, msg.nick),
+                        (msg.mentioned || msg.hasKeyword)
+                            ? Color.fromARGB(100,1,37,70)
+                            : _settings.cardColor
+                      ]),
                     ),
                     child: _MessageListItem(
                         msg, this._settings, widget._userNickname)));
