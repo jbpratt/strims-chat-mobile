@@ -19,6 +19,7 @@ class MessageList extends StatefulWidget {
 
 class _MessageListState extends State<MessageList> {
   final ScrollController _controller = ScrollController();
+  // QUESTION: should this be private?
   List<Message> messages;
   Settings _settings;
 
@@ -42,13 +43,16 @@ class _MessageListState extends State<MessageList> {
                 // TODO: do this properly
                 child: Container(
                     decoration: BoxDecoration(
-                      color: msg.mentioned || msg.hasKeyword
-                          ? Color.fromARGB(200, 0, 0, 200)
-                          : null, // TODO: add a setting colour here
-                      border: new Border(
-                          left: new BorderSide(
-                              color: msg.getTagColor(this._settings, msg.nick),
-                              width: 3)),
+                      borderRadius: new BorderRadius.all(Radius.circular(4)),
+                      gradient: new LinearGradient(stops: [
+                        0.02,
+                        0.02
+                      ], colors: [
+                        msg.getTagColor(this._settings, msg.nick),
+                        (msg.mentioned || msg.hasKeyword)
+                            ? Color.fromARGB(100,1,37,70)
+                            : _settings.cardColor
+                      ]),
                     ),
                     child: _MessageListItem(
                         msg, this._settings, widget._userNickname)));
@@ -60,50 +64,49 @@ class _MessageListState extends State<MessageList> {
 class _MessageListItem extends ListTile {
   final Settings _settings;
   final String _userNickname;
-  _MessageListItem(Message msg, this._settings, this._userNickname)
-      : super(
-            dense: true,
-            title: Padding(
-              padding: EdgeInsets.only(
-                top: 8,
-                bottom: 8,
-              ),
-              child: Text.rich(
-                TextSpan(
-                    children: messageToWidget(
-                  msg.data,
-                  _settings,
-                  _userNickname,
-                  msg.nick,
-                  msg.type,
-                )), // colour here somehow
-              ),
+  final Message _msg;
+  _MessageListItem(this._msg, this._settings, this._userNickname) : super();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+        dense: true,
+        title: Padding(
+          padding: EdgeInsets.only(
+            top: 8,
+            bottom: 8,
+          ),
+          child: Text.rich(
+            TextSpan(
+                children: messageToWidget(
+              _msg.data,
+              _settings,
+              _userNickname,
+              _msg.nick,
+              _msg.type,
+            )), // colour here somehow
+          ),
+        ),
+        subtitle: Padding(
+            padding: EdgeInsets.only(
+              bottom: 8,
             ),
-            subtitle: Padding(
-                padding: EdgeInsets.only(
-                  bottom: 8,
-                ),
-                child: Text.rich(TextSpan(
-                    text: msg.type == "PRIVMSG"
-                        ? msg.nick + " whispered"
-                        : msg.nick,
-                    style: TextStyle(
-                      backgroundColor: msg.type == "PRIVMSG"
-                          ? Utilities.flipColor(_settings.cardColor, 50)
-                          : null,
-                      fontStyle:
-                          msg.type == "PRIVMSG" ? FontStyle.italic : null,
-                      color: msg.type == "PRIVMSG"
-                          ? Utilities.flipColor(
-                              Utilities.flipColor(_settings.cardColor, 50), 100)
-                          : Utilities.flipColor(_settings.cardColor, 100),
-                    )))),
-            trailing: new IconButton(
-              icon: Icon(Icons.more_vert),
-              color: Utilities.flipColor(_settings.cardColor, 100),
-              onPressed: () {},
-            ),
-            onTap: () {});
+            child: Text.rich(TextSpan(
+                text: _msg.type == "PRIVMSG"
+                    ? _msg.nick + " whispered"
+                    : _msg.nick,
+                style: TextStyle(
+                  backgroundColor: _msg.type == "PRIVMSG"
+                      ? Utilities.flipColor(_settings.cardColor, 50)
+                      : null,
+                  fontStyle: _msg.type == "PRIVMSG" ? FontStyle.italic : null,
+                  color: _msg.type == "PRIVMSG"
+                      ? Utilities.flipColor(
+                          Utilities.flipColor(_settings.cardColor, 50), 100)
+                      : Utilities.flipColor(_settings.cardColor, 100),
+                )))),
+        onTap: () {});
+  }
 
   static _launchURL(String url) async {
     if (await canLaunch(url)) {
