@@ -5,8 +5,7 @@ import 'storage.dart';
 
 class SettingsRoute extends StatefulWidget {
   final Settings settings;
-  SettingsRoute(
-      this.settings); 
+  SettingsRoute(this.settings);
 
   @override
   _SettingsState createState() => new _SettingsState();
@@ -187,6 +186,8 @@ class Settings {
   Set<String> wordsHighlighted = new Set<String>(); // word
   Set<String> usersIgnored = new Set<String>(); // username
   Set<String> wordsHidden = new Set<String>(); // word
+  int maxMessages = 300; // default value for max messages in chat
+  int batchDeleteAmount = 20; // the amount of messages to delete at a time
   Storage storage = new Storage();
 
   Map<String, Theme> themes; // the themes users can use
@@ -225,8 +226,7 @@ class Settings {
       var keys = inputMap.keys;
       for (var key in keys) {
         var value = inputMap[key];
-          userTags += key + ":" + value + ",";
-        
+        userTags += key + ":" + value + ",";
       }
       storage.addSetting('userTags', userTags);
     }
