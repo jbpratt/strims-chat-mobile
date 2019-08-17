@@ -223,11 +223,10 @@ class Settings {
     } else {
       String userTags = "";
       var keys = inputMap.keys;
-      var values = inputMap.values;
       for (var key in keys) {
-        for (var value in values) {
+        var value = inputMap[key];
           userTags += key + ":" + value + ",";
-        }
+        
       }
       storage.addSetting('userTags', userTags);
     }
