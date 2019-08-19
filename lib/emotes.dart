@@ -12,8 +12,10 @@ Map<String, Emote> kEmotes = new Map<String, Emote>();
 class Emote {
   String name;
   Image img;
+  Image img2X;
+  Image img3X;
 
-  Emote({this.name, this.img});
+  Emote({this.name, this.img, this.img2X, this.img3X});
 }
 
 Future<Map<String, Emote>> getEmotes() async {
@@ -29,6 +31,14 @@ Future<Map<String, Emote>> getEmotes() async {
           img: Image(
             image: x,
             height: 16,
+          ),
+          img2X: Image(
+            image: x,
+            height: 32,
+          ),
+          img3X: Image(
+            image: x,
+            height: 48,
           ));
     }
     return out;
@@ -47,4 +57,5 @@ List<String> kEmoteModifiers = [
   "worth",
   "rain",
   "snow",
+  "wide",
 ];

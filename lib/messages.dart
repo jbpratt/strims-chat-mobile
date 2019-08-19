@@ -50,7 +50,7 @@ class _MessageListState extends State<MessageList> {
                       ], colors: [
                         msg.getTagColor(this._settings, msg.nick),
                         (msg.mentioned || msg.hasKeyword)
-                            ? Color.fromARGB(100,1,37,70)
+                            ? Color.fromARGB(100, 1, 37, 70)
                             : _settings.cardColor
                       ]),
                     ),
@@ -78,33 +78,32 @@ class _MessageListItem extends ListTile {
           ),
           child: Text.rich(
             TextSpan(
-                children: messageToWidget(
-              _msg.data,
-              _settings,
-              _userNickname,
-              _msg.nick,
-              _msg.type,
-            )), // colour here somehow
+              children: messageToWidget(_msg.data, _settings, _userNickname,
+                  _msg.nick, _msg.type, _msg.comboCount, _msg.comboActive),
+            ), // colour here somehow
           ),
         ),
-        subtitle: Padding(
-            padding: EdgeInsets.only(
-              bottom: 8,
-            ),
-            child: Text.rich(TextSpan(
-                text: _msg.type == "PRIVMSG"
-                    ? _msg.nick + " whispered"
-                    : _msg.nick,
-                style: TextStyle(
-                  backgroundColor: _msg.type == "PRIVMSG"
-                      ? Utilities.flipColor(_settings.cardColor, 50)
-                      : null,
-                  fontStyle: _msg.type == "PRIVMSG" ? FontStyle.italic : null,
-                  color: _msg.type == "PRIVMSG"
-                      ? Utilities.flipColor(
-                          Utilities.flipColor(_settings.cardColor, 50), 100)
-                      : Utilities.flipColor(_settings.cardColor, 100),
-                )))),
+        subtitle: _msg.comboCount == 1
+            ? Padding(
+                padding: EdgeInsets.only(
+                  bottom: 8,
+                ),
+                child: Text.rich(TextSpan(
+                    text: _msg.type == "PRIVMSG"
+                        ? _msg.nick + " whispered"
+                        : _msg.nick,
+                    style: TextStyle(
+                      backgroundColor: _msg.type == "PRIVMSG"
+                          ? Utilities.flipColor(_settings.cardColor, 50)
+                          : null,
+                      fontStyle:
+                          _msg.type == "PRIVMSG" ? FontStyle.italic : null,
+                      color: _msg.type == "PRIVMSG"
+                          ? Utilities.flipColor(
+                              Utilities.flipColor(_settings.cardColor, 50), 100)
+                          : Utilities.flipColor(_settings.cardColor, 100),
+                    ))))
+            : null,
         onTap: () {});
   }
 
@@ -116,8 +115,50 @@ class _MessageListItem extends ListTile {
     }
   }
 
-  static messageToWidget(MessageSegment segment, Settings settings,
-      String userNick, String senderNick, String msgType) {
+  static comboWidget(int comboAmount, bool comboActive) {
+    var output = <InlineSpan>[];
+    double fontSize = 15;
+    FontWeight fontWeight = FontWeight.normal;
+    //TODO: change these sizes
+    if (comboAmount >= 50) {
+      fontWeight = FontWeight.w900;
+      fontSize *= 5;
+    } else if (comboAmount >= 30) {
+      fontWeight = FontWeight.w700;
+      fontSize *= 4;
+    } else if (comboAmount >= 20) {
+      fontWeight = FontWeight.w700;
+      fontSize *= 3;
+    } else if (comboAmount >= 10) {
+      fontWeight = FontWeight.w700;
+      fontSize *= 2;
+    } else if (comboAmount >= 5) {
+      fontSize *= 1.5;
+    }
+    TextSpan count = TextSpan(
+        text: " " + comboAmount.toString(),
+        style: TextStyle(fontSize: fontSize, fontWeight: fontWeight));
+    output.add(count);
+    TextSpan x = TextSpan(
+        text: " X ",
+        style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight));
+    output.add(x);
+    TextSpan name = TextSpan(
+        text: comboActive ? "HITS" : "C-C-C-COMBO",
+        style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight));
+    output.add(name);
+    return output;
+    //(comboActive ? "Hits" : "C-C-C-COMBO")
+  }
+
+  static messageToWidget(
+      MessageSegment segment,
+      Settings settings,
+      String userNick,
+      String senderNick,
+      String msgType,
+      int comboCount,
+      bool comboActive) {
     var output = <InlineSpan>[];
     if (segment.subSegements != null) {
       segment.subSegements.forEach((val) {
@@ -137,8 +178,8 @@ class _MessageListItem extends ListTile {
                 text: val.data
                     .toString()
                     .trimLeft(), // TODO: fix whitespace to left when emote in message
-                children: messageToWidget(
-                    val, settings, userNick, senderNick, msgType),
+                children: messageToWidget(val, settings, userNick, senderNick,
+                    msgType, comboCount, comboActive),
                 style: TextStyle(
                     color: Utilities.flipColor(settings.cardColor,
                         150), // TODO: implement a function for this
@@ -147,7 +188,11 @@ class _MessageListItem extends ListTile {
             break;
           case "emote":
             output.add(WidgetSpan(
-              child: kEmotes["${val.data}"].img,
+              child: comboCount >= 10
+                  ? kEmotes["${val.data}"].img3X
+                  : comboCount >= 2
+                      ? kEmotes["${val.data}"].img2X
+                      : kEmotes["${val.data}"].img,
             ));
             break;
           case "url":
@@ -212,12 +257,15 @@ class _MessageListItem extends ListTile {
             break;
           default:
             TextSpan x = TextSpan(
-                children: messageToWidget(
-                    val, settings, userNick, senderNick, msgType));
+                children: messageToWidget(val, settings, userNick, senderNick,
+                    msgType, comboCount, comboActive));
             output.add(x);
             break;
         }
       });
+      if (comboCount != 1) {
+        output.addAll(comboWidget(comboCount, comboActive));
+      }
       return output;
     }
   }
@@ -233,8 +281,9 @@ class Message {
   bool mentioned;
   Settings settings;
   String userNickname;
-  int comboCount;
-  bool hasComboed;
+  int comboCount = 1;
+  List<String> comboUsers;
+  bool comboActive;
   static const List linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
   Message(
       {this.type,
