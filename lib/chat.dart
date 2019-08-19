@@ -53,17 +53,22 @@ class _ChatPageState extends State<ChatPage> {
               messages.length);
         }
       }
+      if (messages.isNotEmpty) {
+        messages.last.comboActive = false;
+      }
       messages.add(message);
+
       return;
     }
     if (messages.last.messageData == message.messageData) {
-      Message m = comboMessage(message.messageData,
-          messages.last.comboCount == null ? 2 : messages.last.comboCount + 1);
-      if (messages.last.hasComboed != null || message.nick == nick) {
-        m.hasComboed = true;
+      messages.last.comboCount = messages.last.comboCount + 1;
+      if (messages.last.comboUsers == null) {
+        messages.last.comboUsers = new List<String>();
+        messages.last.comboUsers.add(messages.last.nick);
+        messages.last.nick = "comboMessage";
       }
-      messages.removeLast();
-      messages.add(m);
+      messages.last.comboUsers.add(message.nick);
+      messages.last.comboActive = true;
     }
   }
 
@@ -528,10 +533,18 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _isComboButtonShown() {
     if (messages.isNotEmpty && messages.last.isOnlyEmote()) {
-      if (messages.last.hasComboed != null || messages.last.nick == nick) {
-        return false;
+      if (messages.last.comboUsers == null) {
+        if (messages.last.nick != nick) {
+          return true;
+        } else {
+          return false;
+        }
       } else {
-        return true;
+        if (messages.last.comboUsers.contains(nick)) {
+          return false;
+        } else {
+          return true;
+        }
       }
     } else {
       return false;
@@ -555,7 +568,7 @@ class _ChatPageState extends State<ChatPage> {
                       .img, // TODO : remove when emote modifiers are added
                 ),
                 backgroundColor: Colors.transparent)
-            : null,
+            : Container(),
         appBar: new AppBar(
           iconTheme: new IconThemeData(
             color: Utilities.flipColor(headerColor, 100),
