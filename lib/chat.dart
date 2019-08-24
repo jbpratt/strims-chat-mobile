@@ -34,6 +34,7 @@ class _ChatPageState extends State<ChatPage> {
   WSClient ws = new WSClient(kAddress, token: jwt);
   List<InlineSpan> output = [];
   List<Chatter> chatters = [];
+  List<String> autoCompleteSuggestions = [];
   Future<Map<String, Emote>> emotes;
   Storage storage = new Storage();
   String label;
@@ -207,6 +208,7 @@ class _ChatPageState extends State<ChatPage> {
     });
 
     controller = TextEditingController();
+    controller.addListener(_updateAutocompleteSuggestions);
     getAllEmotes();
   }
 
@@ -538,6 +540,43 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  void _updateAutocompleteSuggestions() {
+    List<String> results = new List();
+
+    // gets the last word with any trailing spaces
+    RegExp exp = new RegExp(r":?[a-zA-Z]* *$");
+    String lastWord = exp.stringMatch(controller.text).trim();
+    
+    if (lastWord.startsWith(":")) {
+      lastWord = lastWord.substring(1);
+      for (String mod in kEmoteModifiers) {
+        if (mod.startsWith(lastWord)) {
+          results.add(":" + mod);
+        }
+      }
+    } else {
+      // check emotes 
+      Iterable<String> emotes = kEmotes.keys;
+      for (String emoteName in emotes) {
+        if (emoteName == lastWord) {
+          results.addAll(kEmoteModifiers);
+        } else if (emoteName.startsWith(lastWord)) {
+          results.add(emoteName);
+        }
+      }
+
+      // check chatters
+      for (Chatter chatter in chatters) {
+        if (chatter.nick.startsWith(lastWord)) {
+          results.add(chatter.nick);
+        }
+      }
+    }
+
+    print(results);
+    autoCompleteSuggestions = results;
+  }
+
   @override
   Widget build(BuildContext context) {
     label = determineLabel();
@@ -686,6 +725,15 @@ class _ChatPageState extends State<ChatPage> {
           ),
           Expanded(
             child: ListView(children: <Widget>[MessageList(messages, nick)]),
+          ),
+          new Container(
+            color: Colors.white,
+            padding: new EdgeInsets.all(10.0),
+            child: new TextField(
+              decoration: new InputDecoration(
+                hintText: 'Chat message',
+              ),
+            ),
           )
         ]));
   }
