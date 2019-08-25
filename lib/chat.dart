@@ -29,7 +29,7 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  TextEditingController controller;
+  TextEditingControllerWorkaroud controller = TextEditingControllerWorkaroud();
   List<Message> messages = [];
   WSClient ws = new WSClient(kAddress, token: jwt);
   List<InlineSpan> output = [];
@@ -208,7 +208,6 @@ class _ChatPageState extends State<ChatPage> {
       listen();
     });
 
-    controller = TextEditingController();
     controller.addListener(_updateAutocompleteSuggestions);
     getAllEmotes();
     autoCompleteScrollController = new ScrollController();
@@ -585,7 +584,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _insertAutocomplete(String input) {
-    TextSelection cursorPos = controller.selection;
     String oldText = controller.text;
     String newText;
     oldText = oldText.trimRight();
@@ -602,11 +600,7 @@ class _ChatPageState extends State<ChatPage> {
       oldText = oldText.substring(0, index);
       newText = oldText + " " + input + " ";
     }
-    controller.text = newText;
-
-    // cursorPos = new TextSelection.fromPosition(
-    //     new TextPosition(offset: controller.text.length));
-    // controller.selection = cursorPos;
+    controller.setTextAndPosition(newText);
   }
 
   @override
