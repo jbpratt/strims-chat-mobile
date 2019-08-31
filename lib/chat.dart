@@ -103,10 +103,11 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<String> _getUsername(String jwt) async {
-    var header = new Map<String, String>();
-    header['Cookie'] = 'jwt=$jwt';
+    var headers = new Map<String, String>();
+    headers['Cookie'] = 'jwt=$jwt';
+    headers['user-agent'] = 'mobile.chat.strims.gg';
     Response response =
-        await get("https://strims.gg/api/profile", headers: header);
+        await get("https://strims.gg/api/profile", headers: headers);
     if (response.statusCode == 200) {
       var jsonResponse = jsonDecode(response.body);
       return jsonResponse['username'].toString();
@@ -117,9 +118,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _requestChatHistory() async {
-    // TODO: add useragent
-    //var header = new Map<String, String>();
-    Response response = await get("https://chat.strims.gg/api/chat/history");
+    var headers = new Map<String, String>();
+    headers['user-agent'] = 'mobile.chat.strims.gg';
+    Response response =
+        await get("https://chat.strims.gg/api/chat/history", headers: headers);
     if (response.statusCode == 200) {
       var jsonResponse = jsonDecode(response.body) as List;
       jsonResponse.forEach((i) => handleReceive(i.toString()));

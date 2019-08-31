@@ -17,7 +17,9 @@ class Emote {
 }
 
 Future<Map<String, Emote>> getEmotes() async {
-  var response = await get(kEmoteAddress);
+  var headers = new Map<String, String>();
+  headers['user-agent'] = 'mobile.chat.strims.gg';
+  var response = await get(kEmoteAddress, headers: headers);
   if (response.statusCode == 200) {
     var jsonResponse = jsonDecode(response.body);
     List<dynamic> y = jsonResponse['default'];
