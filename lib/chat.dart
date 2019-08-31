@@ -29,11 +29,13 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  TextEditingController controller;
+  TextEditingControllerWorkaroud controller = TextEditingControllerWorkaroud();
   List<Message> messages = [];
   WSClient ws = new WSClient(kAddress, token: jwt);
   List<InlineSpan> output = [];
   List<Chatter> chatters = [];
+  List<String> autoCompleteSuggestions = [];
+  ScrollController autoCompleteScrollController;
   Future<Map<String, Emote>> emotes;
   Storage storage = new Storage();
   String label;
@@ -53,17 +55,22 @@ class _ChatPageState extends State<ChatPage> {
               messages.length);
         }
       }
+      if (messages.isNotEmpty) {
+        messages.last.comboActive = false;
+      }
       messages.add(message);
+
       return;
     }
     if (messages.last.messageData == message.messageData) {
-      Message m = comboMessage(message.messageData,
-          messages.last.comboCount == null ? 2 : messages.last.comboCount + 1);
-      if (messages.last.hasComboed != null || message.nick == nick) {
-        m.hasComboed = true;
+      messages.last.comboCount = messages.last.comboCount + 1;
+      if (messages.last.comboUsers == null) {
+        messages.last.comboUsers = new List<String>();
+        messages.last.comboUsers.add(messages.last.nick);
+        messages.last.nick = "comboMessage";
       }
-      messages.removeLast();
-      messages.add(m);
+      messages.last.comboUsers.add(message.nick);
+      messages.last.comboActive = true;
     }
   }
 
@@ -206,8 +213,9 @@ class _ChatPageState extends State<ChatPage> {
       listen();
     });
 
-    controller = TextEditingController();
+    controller.addListener(_updateAutocompleteSuggestions);
     getAllEmotes();
+    autoCompleteScrollController = new ScrollController();
   }
 
   Future _showLoginDialog() async {
@@ -528,14 +536,84 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _isComboButtonShown() {
     if (messages.isNotEmpty && messages.last.isOnlyEmote()) {
-      if (messages.last.hasComboed != null || messages.last.nick == nick) {
-        return false;
+      if (messages.last.comboUsers == null) {
+        if (messages.last.nick != nick) {
+          return true;
+        } else {
+          return false;
+        }
       } else {
-        return true;
+        if (messages.last.comboUsers.contains(nick)) {
+          return false;
+        } else {
+          return true;
+        }
       }
     } else {
       return false;
     }
+  }
+
+  // TODO: base autocomplete on cursor position and not end of string
+  void _updateAutocompleteSuggestions() {
+    List<String> results = new List();
+
+    // gets the last word with any trailing spaces
+    RegExp exp = new RegExp(r":?[a-zA-Z]*\s*$");
+    String lastWord = exp.stringMatch(controller.text).trim();
+
+    if (lastWord.startsWith(":")) {
+      lastWord = lastWord.substring(1);
+      for (String mod in kEmoteModifiers) {
+        if (mod.toLowerCase().startsWith(lastWord.toLowerCase()) &&
+            mod != lastWord) {
+          results.add(":" + mod);
+        }
+      }
+    } else {
+      // check emotes
+      Iterable<String> emotes = kEmotes.keys;
+      for (String emoteName in emotes) {
+        if (emoteName.toLowerCase() == lastWord.toLowerCase()) {
+          results.add(":");
+        } else if (emoteName.toLowerCase().startsWith(lastWord.toLowerCase())) {
+          results.add(emoteName);
+        }
+      }
+
+      // check chatters
+      for (Chatter chatter in chatters) {
+        if (chatter.nick.toLowerCase().startsWith(lastWord.toLowerCase()) &&
+            chatter.nick != lastWord) {
+          results.add(chatter.nick);
+        }
+      }
+    }
+
+    autoCompleteScrollController.jumpTo(0);
+    setState(() {
+      autoCompleteSuggestions = results;
+    });
+  }
+
+  void _insertAutocomplete(String input) {
+    String oldText = controller.text;
+    String newText;
+    oldText = oldText.trimRight();
+    if (input == ":") {
+      newText = oldText + ": ";
+    } else if (input.startsWith(":")) {
+      int index = oldText.lastIndexOf(new RegExp(r":[a-zA-Z]*$"));
+      if (index < 0) index = 0;
+      oldText = oldText.substring(0, index);
+      newText = oldText + input + " ";
+    } else {
+      int index = oldText.lastIndexOf(new RegExp(r"\s[a-zA-Z]*$"));
+      if (index < 0) index = 0;
+      oldText = oldText.substring(0, index);
+      newText = oldText + " " + input + " ";
+    }
+    controller.setTextAndPosition(newText);
   }
 
   @override
@@ -555,7 +633,7 @@ class _ChatPageState extends State<ChatPage> {
                       .img, // TODO : remove when emote modifiers are added
                 ),
                 backgroundColor: Colors.transparent)
-            : null,
+            : Container(),
         appBar: new AppBar(
           iconTheme: new IconThemeData(
             color: Utilities.flipColor(headerColor, 100),
@@ -686,6 +764,23 @@ class _ChatPageState extends State<ChatPage> {
           ),
           Expanded(
             child: ListView(children: <Widget>[MessageList(messages, nick)]),
+          ),
+          Container(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: autoCompleteSuggestions.length,
+              controller: autoCompleteScrollController,
+              itemBuilder: (BuildContext ctx, int index) {
+                //
+                return FlatButton(
+                    child: kEmotes.containsKey(autoCompleteSuggestions[index])
+                        ? kEmotes["${autoCompleteSuggestions[index]}"].img
+                        : Text(autoCompleteSuggestions[index]),
+                    onPressed: () =>
+                        {_insertAutocomplete(autoCompleteSuggestions[index])});
+              },
+            ),
           )
         ]));
   }
