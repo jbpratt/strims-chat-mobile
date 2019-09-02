@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class Storage {
@@ -10,11 +11,11 @@ class Storage {
   }
 
   Future<void> initS() async {
-    this._settings= await this._storage.readAll();
-
+    this._settings = await this._storage.readAll();
   }
 
-   Future<void> loadSettings() async {
+  Future<void> loadSettings() async {
+    WidgetsFlutterBinding.ensureInitialized();
     this._settings = await this._storage.readAll();
   }
 
