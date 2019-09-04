@@ -49,10 +49,10 @@ class _ChatPageState extends State<ChatPage> {
       if (messages.isNotEmpty) {
         if (messages.length > settings.maxMessages) {
           messages.removeRange(
+              0,
               (messages.length - settings.batchDeleteAmount < 0)
                   ? 0
-                  : messages.length - settings.batchDeleteAmount,
-              messages.length);
+                  : settings.batchDeleteAmount);
         }
       }
       if (messages.isNotEmpty) {
