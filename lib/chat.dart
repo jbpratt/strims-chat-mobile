@@ -29,7 +29,7 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  TextEditingControllerWorkaroud controller = TextEditingControllerWorkaroud();
+  TextEditingControllerWorkaroud controller;
   List<Message> messages = [];
   WSClient ws = new WSClient(kAddress, token: jwt);
   List<InlineSpan> output = [];
@@ -214,10 +214,11 @@ class _ChatPageState extends State<ChatPage> {
       updateToken();
       listen();
     });
+    controller = TextEditingControllerWorkaroud();
+    autoCompleteScrollController = new ScrollController();
 
     controller.addListener(_updateAutocompleteSuggestions);
     getAllEmotes();
-    autoCompleteScrollController = new ScrollController();
   }
 
   Future _showLoginDialog() async {
@@ -486,6 +487,7 @@ class _ChatPageState extends State<ChatPage> {
           chatters.addAll(buildChatterList(wsResponse[1]));
         });
         var count = getConnectionCount(wsResponse[1]);
+        _updateAutocompleteSuggestions();
         infoMsg(
             'Currently serving $count connections and ${chatters.length} users');
         break;
@@ -559,7 +561,6 @@ class _ChatPageState extends State<ChatPage> {
   // TODO: base autocomplete on cursor position and not end of string
   void _updateAutocompleteSuggestions() {
     List<String> results = new List();
-
     // gets the last word with any trailing spaces
     RegExp exp = new RegExp(r":?[a-zA-Z]*\s*$");
     String lastWord = exp.stringMatch(controller.text).trim();
@@ -574,26 +575,36 @@ class _ChatPageState extends State<ChatPage> {
       }
     } else {
       // check emotes
-      Iterable<String> emotes = kEmotes.keys;
-      for (String emoteName in emotes) {
+      for (String emoteName in kEmotes.keys) {
         if (emoteName.toLowerCase() == lastWord.toLowerCase()) {
-          results.add(":");
-        } else if (emoteName.toLowerCase().startsWith(lastWord.toLowerCase())) {
+          if (emoteName == lastWord) {
+            results.add(":");
+          } else {
+            results.add(emoteName);
+          }
+        } else if (emoteName.toLowerCase().startsWith(lastWord.toLowerCase()) ||
+            controller.text.isEmpty) {
           results.add(emoteName);
         }
       }
 
       // check chatters
       for (Chatter chatter in chatters) {
-        if (chatter.nick.toLowerCase().startsWith(lastWord.toLowerCase()) &&
+        if ((chatter.nick.toLowerCase().startsWith(lastWord.toLowerCase()) ||
+                controller.text.isEmpty) &&
             chatter.nick != lastWord) {
           results.add(chatter.nick);
         }
       }
     }
+    if (autoCompleteScrollController.hasClients) { // stops us from accessing this when not attached to a list
+      autoCompleteScrollController.jumpTo(0);
+    }
 
-    autoCompleteScrollController.jumpTo(0);
     setState(() {
+      if (controller.text.isEmpty) { 
+        results.shuffle();
+      }
       autoCompleteSuggestions = results;
     });
   }
