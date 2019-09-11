@@ -50,7 +50,7 @@ class _MessageListState extends State<MessageList> {
                       ], colors: [
                         msg.getTagColor(this._settings, msg.nick),
                         (msg.mentioned || msg.hasKeyword)
-                            ? Color.fromARGB(100, 1, 37, 70)
+                            ? Color.fromARGB(255, 0, 37, 71)
                             : _settings.cardColor
                       ]),
                     ),
