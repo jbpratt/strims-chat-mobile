@@ -1,4 +1,4 @@
-name: strims_chat 
+name: strims_chat
 description: Mobile chat.strims.gg
 
 # The following defines the version and build number for your application.
@@ -14,7 +14,7 @@ description: Mobile chat.strims.gg
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.2.0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
   unicode: ^0.3.1
@@ -25,8 +25,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.3
-  web_socket_channel: ^1.0.13
-  flutter_inappbrowser: ^2.0.2
+  web_socket_channel: ^2.1.0
+  flutter_inappwebview: ^5.3.2
   http: ^0.13.3
   flutter_secure_storage: ^4.2.0
   url_launcher: any
@@ -34,9 +34,9 @@ dependencies:
   flutter_colorpicker: ^0.5.0
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.9.0
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.8.1
 
 flutter_icons:
   android: "launcher_icon"

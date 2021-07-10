@@ -4,23 +4,21 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class Chatter {
+  Chatter(this.nick, {this.features = const <String>[]});
+
+  factory Chatter.fromJson(Map<String, dynamic> parsedJson) {
+    return Chatter(parsedJson['nick'], features: parsedJson['features']);
+  }
+
   String nick;
   List<String> features;
-
-  Chatter({nick, features});
-
-  factory Chatter.fromJson(Map parsedJson) {
-    return Chatter(nick: parsedJson['nick'], features: parsedJson['features']);
-  }
 }
 
 List<Chatter> buildChatterList(String input) {
-  List<dynamic> userList = jsonDecode(input)['users'];
-  List<Chatter> output = [];
+  final List<dynamic> userList = jsonDecode(input)['users'];
+  final List<Chatter> output = [];
   for (int i = 0; i < userList.length; i++) {
-    Chatter newChatter = Chatter();
-    newChatter.nick = userList[i]['nick'];
-    output.add(newChatter);
+    output.add(Chatter(userList[i]['nick']));
   }
 
   // sort chatter list
@@ -33,15 +31,15 @@ int getConnectionCount(String input) {
 }
 
 class ChatterListRoute extends StatelessWidget {
-  final List<Chatter> _chatterList;
+  const ChatterListRoute(this._chatterList, {Key? key}) : super(key: key);
 
-  ChatterListRoute(this._chatterList);
+  final List<Chatter> _chatterList;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text('Chatters'),
+          title: const Text('Chatters'),
         ),
         body: ListView(
           children: <Widget>[ChatterList(_chatterList)],
@@ -50,10 +48,11 @@ class ChatterListRoute extends StatelessWidget {
 }
 
 class ChatterList extends StatelessWidget {
+  ChatterList(this._chatters, {Key? key}) : super(key: key);
+
   final ScrollController _controller = ScrollController();
   final List<Chatter> _chatters;
 
-  ChatterList(this._chatters);
   @override
   Widget build(BuildContext context) {
     return ListView.builder(

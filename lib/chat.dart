@@ -4,44 +4,46 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:provider/provider.dart';
-import 'settings.dart';
-import 'storage.dart';
-import 'wsclient.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+// import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide Storage;
 
 import 'browser.dart';
 import 'chatter.dart';
 import 'emotes.dart';
 import 'messages.dart';
+import 'settings.dart';
+import 'storage.dart';
 import 'utilities.dart';
+import 'wsclient.dart';
 
-final String kAppTitle = 'Strims';
-final String kLogoPath = 'assets/favicon.ico';
-final String kAddress = 'wss://chat.strims.gg/ws';
+const String kAppTitle = 'Strims';
+const String kLogoPath = 'assets/favicon.ico';
+const String kAddress = 'wss://chat.strims.gg/ws';
+const String kURL = 'https://chat.strims.gg';
 
 Browser inAppBrowser = Browser();
 String jwt = '';
 String nick = 'Anonymous';
-const String URL = 'https://strims.gg';
 
 class ChatPage extends StatefulWidget {
+  const ChatPage({Key? key}) : super(key: key);
+
   @override
   _ChatPageState createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  TextEditingControllerWorkaroud controller;
   List<Message> messages = [];
-  WSClient ws = WSClient(kAddress, token: jwt);
+  WSClient ws = WSClient(kAddress, auth: jwt);
   List<InlineSpan> output = [];
   List<Chatter> chatters = [];
   List<String> autoCompleteSuggestions = [];
-  ScrollController autoCompleteScrollController;
-  Future<Map<String, Emote>> emotes;
   Storage storage = Storage();
-  String label;
-  Settings settings;
-  SettingsNotifier settingsNotifier;
+  late String label;
+  late Settings settings;
+  late SettingsNotifier settingsNotifier;
+  late TextEditingControllerWorkaroud controller;
+  late ScrollController autoCompleteScrollController;
 
   // add message , check if message & last in list is same emote
   // if combo, adds combo message // else just adds message
@@ -65,7 +67,7 @@ class _ChatPageState extends State<ChatPage> {
     }
     if (messages.last.messageData == message.messageData) {
       messages.last.comboCount = messages.last.comboCount + 1;
-      if (messages.last.comboUsers == null) {
+      if (messages.last.comboUsers.isEmpty) {
         messages.last.comboUsers = <String>[];
         messages.last.comboUsers.add(messages.last.nick);
         messages.last.nick = 'comboMessage';
@@ -76,8 +78,8 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void infoMsg(String msg) {
-    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    Message m = Message.fromJson(
+    final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    final Message m = Message.fromJson(
         'MSG',
         json.decode(
             '{"nick":"info","features":[],"timestamp":$timestamp,"data":"$msg"}'),
@@ -97,50 +99,49 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Message comboMessage(String emote, int combo) {
-    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    Message m = Message.fromJson(
+    final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    return Message.fromJson(
         'MSG',
         json.decode(
             '{"nick":"$combo X C-C-C-COMBO","features":[],"timestamp":$timestamp,"data":"$emote"}'),
         settings,
-        nick);
-    m.comboCount = combo;
-    return m;
+        nick,
+        comboCount: combo);
   }
 
   Future<String> _getUsername(String jwt) async {
-    var headers = <String, String>{};
-    headers['Cookie'] = 'jwt=$jwt';
-    headers['user-agent'] = 'mobile.chat.strims.gg';
-    Response response =
-        await get(Uri.dataFromString('$URL/api/profile'), headers: headers);
+    final headers = <String, String>{
+      'Cookie': 'jwt=$jwt',
+      'user-agent': 'mobile.chat.strims.gg'
+    };
+    final Response response =
+        await get(Uri.parse('$kURL/api/profile'), headers: headers);
     if (response.statusCode == 200) {
-      var jsonResponse = jsonDecode(response.body);
+      final jsonResponse = jsonDecode(response.body);
       return jsonResponse['username'].toString();
     } else {
       print('Request failed with status: ${response.statusCode}.');
-      return null;
+      return '';
     }
   }
 
   Future<void> _requestChatHistory() async {
-    var headers = <String, String>{};
-    headers['user-agent'] = 'mobile.chat.strims.gg';
-    Response response = await get(Uri.dataFromString('$URL/api/chat/history'),
-        headers: headers);
+    final headers = <String, String>{'user-agent': 'mobile.chat.strims.gg'};
+    final Response response =
+        await get(Uri.parse('$kURL/api/chat/history'), headers: headers);
     if (response.statusCode == 200) {
-      var jsonResponse = jsonDecode(response.body) as List;
+      print(response.body);
+      final jsonResponse = jsonDecode(response.body) as List;
       jsonResponse.forEach((i) => handleReceive(i.toString()));
     } else {
       print('Request failed with status: ${response.statusCode}.');
-      return null;
     }
   }
 
   void listen() {
     _requestChatHistory().then((onValue) {
       infoMsg('Connecting to chat.strims.gg ...');
-      WebSocketChannel channel = ws.dial();
+      final WebSocketChannel channel = ws.dial();
       infoMsg('Connection established');
       ws.channel = channel;
       ws.channel.stream.listen((onData) {
@@ -155,25 +156,29 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> login() async {
     // if already logged in then open profile
-    await inAppBrowser.open(url: '$URL/login').then((val) {
-      inAppBrowser.onLoadStop('$URL/').then((onValue) {
-        inAppBrowser.getCookie('jwt').then((cookie) {
-          String tmp = cookie.value;
-          if (tmp != null && tmp.isNotEmpty) {
-            jwt = tmp;
-            updateToken();
-            storage.addSetting('jwt', jwt);
-            _getAndSaveUsername();
-          }
-        });
-      });
-    }).then((onValue) {
-      resetChannel();
-    });
+    infoMsg('login is currently disabled');
+//    await inAppBrowser
+//        .openUrlRequest(
+//            urlRequest: URLRequest(url: Uri.parse('$kURL/login')))
+//        .then((val) {
+//      inAppBrowser.onLoadStop(Uri.parse('$kURL/')).then((onValue) {
+//        inAppBrowser.getCookie('jwt').then((cookie) {
+//          final String tmp = cookie.value;
+//          if (tmp.isNotEmpty) {
+//            jwt = tmp;
+//            updateToken();
+//            storage.addSetting('jwt', jwt);
+//            _getAndSaveUsername();
+//          }
+//        });
+//      });
+//    }).then((onValue) {
+//      resetChannel();
+//    });
   }
 
   void updateToken() {
-    ws.updateToken(jwt);
+    ws.token = jwt;
   }
 
   void resetChannel() {
@@ -187,9 +192,7 @@ class _ChatPageState extends State<ChatPage> {
     resetChannel();
   }
 
-  Future<void> getAllEmotes() async {
-    kEmotes = await getEmotes();
-  }
+  Future<void> getAllEmotes() async => kEmotes = await getEmotes();
 
   Future<void> _getAndSaveUsername() async {
     nick = await _getUsername(jwt);
@@ -218,9 +221,10 @@ class _ChatPageState extends State<ChatPage> {
 
     controller.addListener(_updateAutocompleteSuggestions);
     getAllEmotes();
+    if (jwt.isNotEmpty) _getAndSaveUsername();
   }
 
-  Future _showLoginDialog() async {
+  Future<void> _showLoginDialog() async {
     await showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -228,28 +232,28 @@ class _ChatPageState extends State<ChatPage> {
             // TODO: remove the popup somehow
           }
           return AlertDialog(
-            title: Text('Whoops!'),
-            content: Text('You must first sign in to chat'),
+            title: const Text('Whoops!'),
+            content: const Text('You must first sign in to chat'),
             actions: <Widget>[
               TextButton(
                 onPressed: () async {
                   await login();
                 },
-                child: Text('Sign in'),
+                child: const Text('Sign in'),
               ),
               TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                     resetOnPopupClose();
                   },
-                  child: Text('Close'))
+                  child: const Text('Close'))
             ],
           );
         });
   }
 
   void handleTagHighlightIgnore(String input) {
-    List colors = [
+    const colors = [
       'green',
       'yellow',
       'orange',
@@ -272,7 +276,7 @@ class _ChatPageState extends State<ChatPage> {
         test = false;
       }
     }
-    List output = inputNoWhitespace.split(' ');
+    final output = inputNoWhitespace.split(' ');
     switch (output[0].toString().replaceAll('/', '')) {
       case 'highlight':
         if (output.length == 1 || output[1].isEmpty) {
@@ -305,8 +309,7 @@ class _ChatPageState extends State<ChatPage> {
       case 'tag':
         if (output.length == 1 || output[1].isEmpty) {
           infoMsg(settings.userTags.isEmpty
-              ? 'No tagged users, syntax : \/tag {user} {color}'
-                      '. Available colors: ' +
+              ? 'No tagged users, syntax : \/tag {user} {color}. Available colors: ' +
                   colors.toString().replaceAll('[', '').replaceAll(']', '')
               : 'Highlighted users : ' +
                   settings.userTags
@@ -316,7 +319,7 @@ class _ChatPageState extends State<ChatPage> {
                   '. Available colors: ' +
                   colors.toString().replaceAll('[', '').replaceAll(']', ''));
         } else if (output.length == 2 || output[2].isEmpty) {
-          var color = colors[Random().nextInt(colors.length - 1)];
+          final color = colors[Random().nextInt(colors.length - 1)];
           infoMsg('Tagged ' + output[1] + ' as ' + color);
           settingsNotifier.addUserTags(output[1], color);
         } else if (output.length >= 3) {
@@ -326,15 +329,14 @@ class _ChatPageState extends State<ChatPage> {
           } else {
             color = output[2].toLowerCase();
           }
-          infoMsg('Tagged ' + output[1] + ' as ' + color);
+          infoMsg('Tagged ${output[1]} as $color');
           settingsNotifier.addUserTags(output[1], color);
         }
         break;
       case 'untag':
         if (output.length == 1 || output[1].isEmpty) {
           infoMsg(settings.userTags.isEmpty
-              ? 'No tagged users, syntax : \/untag {user} {color}'
-                      '. Available colors: ' +
+              ? 'No tagged users, syntax : \/untag {user} {color}. Available colors: ' +
                   colors.toString().replaceAll('[', '').replaceAll(']', '')
               : 'Highlighted users : ' +
                   settings.userTags
@@ -372,7 +374,7 @@ class _ChatPageState extends State<ChatPage> {
                       .replaceAll('{', '')
                       .replaceAll('}', ''));
         } else if (output.length >= 2) {
-          infoMsg(output[1] + ' has been removed from your ignore list');
+          infoMsg('${output[1]} has been removed from your ignore list');
           settingsNotifier.removeUsersIgnored(output[1]);
         }
         break;
@@ -386,7 +388,7 @@ class _ChatPageState extends State<ChatPage> {
                       .replaceAll('{', '')
                       .replaceAll('}', ''));
         } else if (output.length >= 2) {
-          infoMsg('Hiding messages including ' + output[1]);
+          infoMsg('Hiding messages including ${output[1]}');
           settingsNotifier.addWordsHidden(output[1]);
         }
         break;
@@ -411,15 +413,16 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void sendData() {
-    if (jwt == null || jwt == '') {
+    if (jwt.isEmpty) {
       _showLoginDialog();
+      return;
     }
 
     if (controller.text.isNotEmpty) {
-      String text = controller.text;
+      final String text = controller.text;
       // if first two chars are '/w' or '/msg' or '/message' or '/tell' or
       // '/notify' or '/t'  or '/whisper' // <- all pms if user is auth as
-      // moderator // '/ban' or '/mute'
+      // moderator: '/ban' or '/mute'
 
       if (text[0] == '/') {
         // TODO: trim left for function check ?
@@ -433,11 +436,11 @@ class _ChatPageState extends State<ChatPage> {
             RegExp(r'^\/(w|(whisper)|(message)|(msg)|t|(tell)|(notify))'))) {
           // is private message
 
-          List<String> splitText = text.split(RegExp(r'\s'));
+          final List<String> splitText = text.split(RegExp(r'\s'));
           String username = splitText[1];
 
           bool found = false;
-          for (Chatter val in chatters) {
+          for (final Chatter val in chatters) {
             if (val.nick.toLowerCase() == username.toLowerCase()) {
               username = val.nick;
               found = true;
@@ -453,50 +456,47 @@ class _ChatPageState extends State<ChatPage> {
             return;
           }
 
-          String body = splitText.sublist(2).join(' ');
+          final String body = splitText.sublist(2).join(' ');
 
-          ws.channel.sink.add(
-              'PRIVMSG {"nick":"' + username + '", "data":"' + body + '"}');
+          ws.channel.sink.add('PRIVMSG {"nick":"$username", "data":"$body"}');
         }
       } else {
-        ws.channel.sink.add('MSG {"data":"' + text + '"}');
+        ws.channel.sink.add('MSG {"data":"$text"}');
       }
     }
 
     controller.text = '';
   }
 
-  void sendDataKeyboard(String data) {
-    sendData();
-  }
+  void sendDataKeyboard(String data) => sendData();
 
   // First index is type, then data
   List<String> parseMsg(String msg) {
     return [
-      msg.split(RegExp(r'{[^}]*}'))[0].trim(),
-      msg.split(RegExp(r'^[^ ]*'))[1]
+      msg.split(RegExp('{[^}]*}'))[0].trim(),
+      msg.split(RegExp('^[^ ]*'))[1]
     ];
   }
 
   void handleReceive(String msg) {
-    var wsResponse = parseMsg(msg);
+    final wsResponse = parseMsg(msg);
     switch (wsResponse[0]) {
       case 'NAMES':
         setState(() {
           chatters.addAll(buildChatterList(wsResponse[1]));
         });
-        var count = getConnectionCount(wsResponse[1]);
+        final count = getConnectionCount(wsResponse[1]);
         _updateAutocompleteSuggestions();
         infoMsg(
             'Currently serving $count connections and ${chatters.length} users');
         break;
       case 'MSG':
-        Message m = Message.fromJson(
+        final Message m = Message.fromJson(
             wsResponse[0], json.decode(wsResponse[1]), settings, nick);
         setState(() => addMessage(m));
         break;
       case 'PRIVMSG':
-        Message m = Message.fromJson(
+        final Message m = Message.fromJson(
             wsResponse[0], json.decode(wsResponse[1]), settings, nick);
         setState(() => addMessage(m));
         break;
@@ -519,7 +519,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   String determineLabel() {
-    if (nick == null || nick.isEmpty || nick == 'Anonymous') {
+    if (nick.isEmpty || nick == 'Anonymous') {
       return 'You need to be signed in to chat';
     } else {
       return 'Write something $nick ...';
@@ -527,29 +527,21 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _sendComboEmote() {
-    if (jwt == null || jwt == '') {
+    if (jwt.isEmpty) {
       _showLoginDialog();
       return;
     }
     if (messages.last.isOnlyEmote()) {
-      ws.channel.sink.add('MSG {"data":"' + messages.last.messageData + '"}');
+      ws.channel.sink.add('MSG {"data":"${messages.last.messageData}"}');
     }
   }
 
   bool _isComboButtonShown() {
     if (messages.isNotEmpty && messages.last.isOnlyEmote()) {
-      if (messages.last.comboUsers == null) {
-        if (messages.last.nick != nick) {
-          return true;
-        } else {
-          return false;
-        }
+      if (messages.last.comboUsers.isEmpty) {
+        return messages.last.nick != nick;
       } else {
-        if (messages.last.comboUsers.contains(nick)) {
-          return false;
-        } else {
-          return true;
-        }
+        return !messages.last.comboUsers.contains(nick);
       }
     } else {
       return false;
@@ -558,22 +550,22 @@ class _ChatPageState extends State<ChatPage> {
 
   // TODO: base autocomplete on cursor position and not end of string
   void _updateAutocompleteSuggestions() {
-    List<String> results = [];
+    final List<String> results = [];
     // gets the last word with any trailing spaces
-    RegExp exp = RegExp(r':?[a-zA-Z]*\s*$');
-    String lastWord = exp.stringMatch(controller.text).trim();
+    final RegExp exp = RegExp(r':?[a-zA-Z]*\s*$');
+    String lastWord = exp.stringMatch(controller.text)!.trim();
 
     if (lastWord.startsWith(':')) {
       lastWord = lastWord.substring(1);
-      for (String mod in kEmoteModifiers) {
+      for (final String mod in kEmoteModifiers) {
         if (mod.toLowerCase().startsWith(lastWord.toLowerCase()) &&
             mod != lastWord) {
-          results.add(':' + mod);
+          results.add(':$mod');
         }
       }
     } else {
       // check emotes
-      for (String emoteName in kEmotes.keys) {
+      for (final String emoteName in kEmotes.keys) {
         if (emoteName.toLowerCase() == lastWord.toLowerCase()) {
           if (emoteName == lastWord) {
             results.add(':');
@@ -587,7 +579,7 @@ class _ChatPageState extends State<ChatPage> {
       }
 
       // check chatters
-      for (Chatter chatter in chatters) {
+      for (final Chatter chatter in chatters) {
         if ((chatter.nick.toLowerCase().startsWith(lastWord.toLowerCase()) ||
                 controller.text.isEmpty) &&
             chatter.nick != lastWord) {
@@ -634,15 +626,15 @@ class _ChatPageState extends State<ChatPage> {
     settingsNotifier = Provider.of<SettingsNotifier>(context);
     settings = Provider.of<SettingsNotifier>(context).settings;
 
-    Color headerColor = Utilities.flipColor(settings.bgColor, 100);
+    final Color headerColor = Utilities.flipColor(settings.bgColor, 100);
     return Scaffold(
         floatingActionButton: _isComboButtonShown()
             ? FloatingActionButton(
                 onPressed: _sendComboEmote,
                 backgroundColor: Colors.transparent,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints.expand(),
-                  child: kEmotes[messages.last.messageData.split(':')[0]]
+                  constraints: const BoxConstraints.expand(),
+                  child: kEmotes[messages.last.messageData.split(':')[0]]!
                       .img, // TODO : remove when emote modifiers are added
                 ))
             : Container(),
@@ -660,19 +652,18 @@ class _ChatPageState extends State<ChatPage> {
                 height: 24,
               ),
               Container(
-                  padding: const EdgeInsets.all(8.0), child: Text(kAppTitle))
+                  padding: const EdgeInsets.all(8),
+                  child: const Text(kAppTitle))
             ],
           ),
-          elevation: 0.0,
+          elevation: 0,
           actions: <Widget>[
             IconButton(
               icon: Icon(
                 Icons.person,
                 color: Utilities.flipColor(headerColor, 100),
               ),
-              onPressed: () {
-                login();
-              },
+              onPressed: login,
             ),
           ],
         ),
@@ -680,7 +671,7 @@ class _ChatPageState extends State<ChatPage> {
           child: ListView(
             children: <Widget>[
               ListTile(
-                title: Text('Settings'),
+                title: const Text('Settings'),
                 trailing: Icon(
                   Icons.settings,
                   color: Utilities.flipColor(headerColor, 100),
@@ -696,8 +687,8 @@ class _ChatPageState extends State<ChatPage> {
                 },
               ),
               ListTile(
-                title: Text('User list'),
-                trailing: Icon(Icons.people),
+                title: const Text('User list'),
+                trailing: const Icon(Icons.people),
                 onTap: () {
                   Navigator.of(context).pop();
                   Navigator.push(
@@ -708,8 +699,8 @@ class _ChatPageState extends State<ChatPage> {
                 },
               ),
               ListTile(
-                title: Text('PMs'),
-                trailing: Icon(Icons.mail),
+                title: const Text('PMs'),
+                trailing: const Icon(Icons.mail),
                 onTap: () {
                   Navigator.of(context).pop();
                   Navigator.push(
@@ -727,8 +718,7 @@ class _ChatPageState extends State<ChatPage> {
                     updateToken();
                   });
 
-                  storage.deleteSetting('jwt');
-                  storage.deleteSetting('nick');
+                  storage..deleteSetting('jwt')..deleteSetting('nick');
 
                   resetChannel();
                   // reset conn
@@ -737,7 +727,7 @@ class _ChatPageState extends State<ChatPage> {
                     label = determineLabel();
                   });
                 },
-                child: Text('Logout'),
+                child: const Text('Logout'),
               )
             ],
           ),
@@ -745,34 +735,30 @@ class _ChatPageState extends State<ChatPage> {
         backgroundColor: settings.bgColor,
         body: Column(children: <Widget>[
           Container(
-            padding: EdgeInsets.symmetric(
-              vertical: 5.0,
-              horizontal: 5.0,
+            padding: const EdgeInsets.symmetric(
+              vertical: 5,
+              horizontal: 5,
             ),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  Form(
-                      child: Flexible(
-                    child: TextFormField(
-                      decoration: InputDecoration(
-                        labelText: label,
-                        filled: true,
-                      ),
-                      controller: controller,
-                      onFieldSubmitted: sendDataKeyboard,
-                    ),
-                  )),
-                  ButtonTheme(
-                    minWidth: 20.0,
-                    child: TextButton(
-                      onPressed: () {
-                        sendData();
-                      },
-                      child: Icon(Icons.send),
-                    ),
+            child: Row(children: <Widget>[
+              Form(
+                  child: Flexible(
+                child: TextFormField(
+                  decoration: InputDecoration(
+                    labelText: label,
+                    filled: true,
                   ),
-                ]),
+                  controller: controller,
+                  onFieldSubmitted: sendDataKeyboard,
+                ),
+              )),
+              ButtonTheme(
+                minWidth: 20,
+                child: TextButton(
+                  onPressed: sendData,
+                  child: const Icon(Icons.send),
+                ),
+              ),
+            ]),
           ),
           Expanded(
             child: ListView(children: <Widget>[MessageList(messages, nick)]),
@@ -789,7 +775,7 @@ class _ChatPageState extends State<ChatPage> {
                     onPressed: () =>
                         {_insertAutocomplete(autoCompleteSuggestions[index])},
                     child: kEmotes.containsKey(autoCompleteSuggestions[index])
-                        ? kEmotes['${autoCompleteSuggestions[index]}'].img
+                        ? kEmotes[autoCompleteSuggestions[index]]!.img
                         : Text(autoCompleteSuggestions[index]));
               },
             ),
@@ -799,12 +785,14 @@ class _ChatPageState extends State<ChatPage> {
 }
 
 class WhispersRoute extends StatelessWidget {
+  const WhispersRoute({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text('Whispers'),
+          title: const Text('Whispers'),
         ),
-        body: Column(children: <Widget>[]));
+        body: Column());
   }
 }

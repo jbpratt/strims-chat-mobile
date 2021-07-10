@@ -1,53 +1,60 @@
-import 'dart:convert';
-
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 
-final Uri kEmoteAddress = Uri.dataFromString(
-    'https://raw.githubusercontent.com/memelabs/chat-gui/master/assets/emotes.json');
+import 'emote_manifest.dart';
+
+final Uri kEmoteManifest =
+    Uri.parse('https://chat.strims.gg/emote-manifest.json');
 
 Map<String, Emote> kEmotes = <String, Emote>{};
 
 class Emote {
+  Emote(
+      {required this.name,
+      required this.img,
+      required this.img2X,
+      required this.img3X});
   String name;
   Image img;
   Image img2X;
   Image img3X;
-
-  Emote({this.name, this.img, this.img2X, this.img3X});
 }
 
 Future<Map<String, Emote>> getEmotes() async {
-  var headers = <String, String>{};
-  headers['user-agent'] = 'mobile.chat.strims.gg';
-  var response = await get(kEmoteAddress, headers: headers);
+  final out = <String, Emote>{};
+  final headers = <String, String>{'user-agent': 'mobile.chat.strims.gg'};
+  final response = await get(kEmoteManifest, headers: headers);
   if (response.statusCode == 200) {
-    var jsonResponse = jsonDecode(response.body);
-    List<dynamic> y = jsonResponse['default'];
-    Map<String, Emote> out = <String, Emote>{};
-    for (int i = 0; i < y.length; i++) {
-      AssetImage x = AssetImage('assets/${y[i]}');
-      out[y[i]] = Emote(
-          name: y[i],
+    final manifest = Manifest.fromJson(response.body);
+    for (final emote in manifest.emotes) {
+      // TODO: download and cache images
+      AssetImage img;
+      try {
+        img = AssetImage('assets/${emote.name}');
+      } catch (e) {
+        img = const AssetImage('assets/default');
+      }
+
+      out[emote.name] = Emote(
+          name: emote.name,
           img: Image(
-            image: x,
+            image: img,
             height: 16,
           ),
           img2X: Image(
-            image: x,
+            image: img,
             height: 32,
           ),
           img3X: Image(
-            image: x,
+            image: img,
             height: 48,
           ));
     }
-    return out;
   } else {
     print('Request failed with status: ${response.statusCode}.');
   }
-  return null;
+  return out;
 }
 
 List<String> kEmoteModifiers = [

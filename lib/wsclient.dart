@@ -2,20 +2,23 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WSClient {
+  WSClient(this.address, {this.auth = ''});
+
   String address;
-  String token;
-  WebSocketChannel channel;
+  String auth;
+  late WebSocketChannel channel;
 
-  WSClient(this.address, {this.token});
+  String get token {
+    return auth;
+  }
 
-  void updateToken(String token) {
-    this.token = token;
+  set token(String token) {
+    auth = token;
   }
 
   WebSocketChannel dial() {
-    print('opening channel');
-    channel = IOWebSocketChannel.connect(address,
-        headers: token?.isNotEmpty == true ? {'Cookie': 'jwt=$token'} : {});
-    return channel;
+    //print('opening channel');
+    return IOWebSocketChannel.connect(address,
+        headers: auth.isNotEmpty ? {'Cookie': 'jwt=$auth'} : {});
   }
 }

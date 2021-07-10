@@ -3,27 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'settings.dart';
 import 'emotes.dart';
+import 'settings.dart';
 import 'utilities.dart';
 
 class MessageList extends StatefulWidget {
+  const MessageList(this._messages, this._userNickname, {Key? key})
+      : super(key: key);
+
   final List<Message> _messages;
   final String _userNickname;
-
-  MessageList(this._messages, this._userNickname);
 
   @override
   _MessageListState createState() => _MessageListState(_messages);
 }
 
 class _MessageListState extends State<MessageList> {
+  _MessageListState(this.messages);
+
   final ScrollController _controller = ScrollController();
   // QUESTION: should this be private?
   final List<Message> messages;
-  Settings _settings;
+  late Settings _settings;
 
-  _MessageListState(this.messages);
   @override
   Widget build(BuildContext context) {
     _settings = Provider.of<SettingsNotifier>(context).settings;
@@ -37,21 +39,22 @@ class _MessageListState extends State<MessageList> {
           controller: _controller,
           itemCount: widget._messages.length,
           itemBuilder: (BuildContext ctx, int index) {
-            Message msg = widget._messages[index];
+            final Message msg = widget._messages[index];
             return Card(
                 color: _settings.cardColor,
                 // TODO: do this properly
                 child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
-                      gradient: LinearGradient(stops: [
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                      gradient: LinearGradient(stops: const [
                         0.02,
                         0.02
                       ], colors: [
                         msg.getTagColor(_settings, msg.nick),
-                        (msg.mentioned || msg.hasKeyword)
-                            ? Color.fromARGB(255, 0, 37, 71)
-                            : _settings.cardColor
+                        if (msg.mentioned || msg.hasKeyword)
+                          const Color.fromARGB(255, 0, 37, 71)
+                        else
+                          _settings.cardColor
                       ]),
                     ),
                     child: _MessageListItem(
@@ -62,35 +65,38 @@ class _MessageListState extends State<MessageList> {
 }
 
 class _MessageListItem extends ListTile {
+  const _MessageListItem(this._msg, this._settings, this._userNickname)
+      : super();
+
   final Settings _settings;
   final String _userNickname;
   final Message _msg;
-  _MessageListItem(this._msg, this._settings, this._userNickname) : super();
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
         dense: true,
         title: Padding(
-          padding: EdgeInsets.only(
+          padding: const EdgeInsets.only(
             top: 8,
             bottom: 8,
           ),
           child: Text.rich(
             TextSpan(
               children: messageToWidget(_msg.data, _settings, _userNickname,
-                  _msg.nick, _msg.type, _msg.comboCount, _msg.comboActive),
+                  _msg.nick, _msg.type, _msg.comboCount,
+                  comboActive: _msg.comboActive),
             ), // colour here somehow
           ),
         ),
         subtitle: _msg.comboCount == 1
             ? Padding(
-                padding: EdgeInsets.only(
+                padding: const EdgeInsets.only(
                   bottom: 8,
                 ),
                 child: Text.rich(TextSpan(
                     text: _msg.type == 'PRIVMSG'
-                        ? _msg.nick + ' whispered'
+                        ? '${_msg.nick} whispered'
                         : _msg.nick,
                     style: TextStyle(
                       backgroundColor: _msg.type == 'PRIVMSG'
@@ -107,7 +113,7 @@ class _MessageListItem extends ListTile {
         onTap: () {});
   }
 
-  static void _launchURL(String url) async {
+  static Future<void> _launchURL(String url) async {
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -115,8 +121,14 @@ class _MessageListItem extends ListTile {
     }
   }
 
-  static List<InlineSpan> comboWidget(int comboAmount, bool comboActive) {
-    var output = <InlineSpan>[];
+  // TODO: comboActive is never getting set to true
+  static List<InlineSpan> comboWidget(int comboAmount,
+      {bool comboActive = false}) {
+    final output = <InlineSpan>[];
+    if (!comboActive) {
+      return output;
+    }
+
     double fontSize = 15;
     FontWeight fontWeight = FontWeight.normal;
     //TODO: change these sizes
@@ -137,15 +149,16 @@ class _MessageListItem extends ListTile {
     }
     // HACKER 7 X C-C-C-COMBO
     // combo amount
-    output.add(TextSpan(
-        text: ' ' + comboAmount.toString(),
-        style: TextStyle(fontSize: fontSize, fontWeight: fontWeight)));
-    output.add(TextSpan(
-        text: ' X ',
-        style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight)));
-    output.add(TextSpan(
-        text: comboActive ? 'HITS' : 'C-C-C-COMBO',
-        style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight)));
+    output
+      ..add(TextSpan(
+          text: ' ${comboAmount.toString()}',
+          style: TextStyle(fontSize: fontSize, fontWeight: fontWeight)))
+      ..add(TextSpan(
+          text: ' X ',
+          style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight)))
+      ..add(TextSpan(
+          text: comboActive ? 'HITS' : 'C-C-C-COMBO',
+          style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight)));
     return output;
     //(comboActive ? "Hits" : "C-C-C-COMBO")
   }
@@ -157,17 +170,16 @@ class _MessageListItem extends ListTile {
       String senderNick,
       String msgType,
       int comboCount,
-      bool comboActive) {
-    var output = <InlineSpan>[];
-    if (segment.subSegements != null) {
-      segment.subSegements.forEach((val) {
+      {bool comboActive = false}) {
+    final output = <InlineSpan>[];
+    if (segment.subSegments.isNotEmpty) {
+      for (final val in segment.subSegments) {
         // TODO: get this from the settings class
         var bgColor = Colors.blueGrey; // default colour
-
         if (userNick == senderNick) {
           bgColor = Colors.amber;
         } else {
-          if (userNick == null || userNick.isEmpty) {
+          if (userNick.isEmpty) {
             // messsage contains anonymous
           }
         }
@@ -177,8 +189,9 @@ class _MessageListItem extends ListTile {
                 text: val.data
                     .toString()
                     .trimLeft(), // TODO: fix whitespace to left when emote in message
-                children: messageToWidget(val, settings, userNick, senderNick,
-                    msgType, comboCount, comboActive),
+                children: messageToWidget(
+                    val, settings, userNick, senderNick, msgType, comboCount,
+                    comboActive: comboActive),
                 style: TextStyle(
                     color: Utilities.flipColor(settings.cardColor,
                         150), // TODO: implement a function for this
@@ -187,10 +200,10 @@ class _MessageListItem extends ListTile {
           case 'emote':
             output.add(WidgetSpan(
               child: comboCount >= 10
-                  ? kEmotes['${val.data}'].img3X
+                  ? kEmotes[val.data]!.img3X
                   : comboCount >= 2
-                      ? kEmotes['${val.data}'].img2X
-                      : kEmotes['${val.data}'].img,
+                      ? kEmotes[val.data]!.img2X
+                      : kEmotes[val.data]!.img2X,
             ));
             break;
           case 'url':
@@ -200,7 +213,7 @@ class _MessageListItem extends ListTile {
                 decoration: TextDecoration.underline,
                 background: Paint()..color = Colors.transparent);
 
-            if (val.getLinkModifier != null) {
+            if (val.getLinkModifier.isNotEmpty) {
               switch (val.getLinkModifier) {
                 case 'nsfl':
                   styleURL = TextStyle(
@@ -245,7 +258,7 @@ class _MessageListItem extends ListTile {
             ));
             break;
           case 'code':
-            TextSpan x = TextSpan(
+            final TextSpan x = TextSpan(
                 text: val.data.toString(),
                 style: TextStyle(
                     color: Colors.grey[400],
@@ -254,13 +267,14 @@ class _MessageListItem extends ListTile {
             break;
           default:
             output.add(TextSpan(
-                children: messageToWidget(val, settings, userNick, senderNick,
-                    msgType, comboCount, comboActive)));
+                children: messageToWidget(
+                    val, settings, userNick, senderNick, msgType, comboCount,
+                    comboActive: comboActive)));
             break;
         }
-      });
+      }
       if (comboCount != 1) {
-        output.addAll(comboWidget(comboCount, comboActive));
+        output.addAll(comboWidget(comboCount));
       }
     }
     return output;
@@ -268,29 +282,308 @@ class _MessageListItem extends ListTile {
 }
 
 class Message {
+  Message(
+      {required this.type,
+      required this.nick,
+      required this.timestamp,
+      required this.data,
+      required this.settings,
+      required this.hasKeyword,
+      required this.mentioned,
+      required this.userNickname,
+      required this.messageData,
+      this.comboCount = 0});
+
+  factory Message.fromJson(String type, Map<String, dynamic> parsedJson,
+      Settings settings, String userNickname,
+      {int comboCount = 0}) {
+    // ignore escaped backticks
+    int _findNextTick(String str) {
+      int base = 0;
+      while (str.isNotEmpty) {
+        final index = str.indexOf('`');
+        if (index == -1) {
+          return -1;
+        } else if (index - 1 >= 0 && str[(index - 1)] == r'\') {
+          base += index + 1;
+          str = str.substring(index + 1);
+        } else {
+          return index + base;
+        }
+      }
+      return -1;
+    }
+
+    List<MessageSegment> _tokenizeCode(String str) {
+      final List<MessageSegment> returnList = <MessageSegment>[];
+      final int indexOne = _findNextTick(str);
+      if (indexOne != -1) {
+        final String beforeFirstTick = str.substring(0, indexOne);
+        final String afterFirstTick = str.substring(indexOne + 1);
+        final int indexTwo = _findNextTick(afterFirstTick);
+        if (indexTwo != -1) {
+          final String betweenTicks = afterFirstTick.substring(0, indexTwo);
+          final String afterSecondTick = afterFirstTick.substring(indexTwo + 1);
+          if (beforeFirstTick.isNotEmpty) {
+            returnList.add(MessageSegment('text', beforeFirstTick));
+          }
+          returnList.add(MessageSegment('code', betweenTicks));
+          if (afterSecondTick.isNotEmpty) {
+            returnList.addAll(_tokenizeCode(afterSecondTick));
+          }
+        }
+      } else {
+        returnList.add(MessageSegment('text', str));
+      }
+      return returnList;
+    }
+
+    void _recursiveCode(MessageSegment base) {
+      if (base.type == 'text' && base.subSegments.isEmpty) {
+        base
+          ..subSegments = _tokenizeCode(base.data)
+          ..data = '';
+      } else if (base.subSegments.isNotEmpty) {
+        base.subSegments.forEach(_recursiveCode);
+      }
+    }
+
+    void _tokenizeGreentext(MessageSegment base) {
+      if (base.type == 'text' && base.subSegments.isEmpty) {
+        final RegExp greenReg = RegExp(r'^\s*>.*$');
+        if (greenReg.hasMatch(base.data)) {
+          base.modifier = 'green';
+        }
+      } else if (base.subSegments.isNotEmpty) {
+        base.subSegments.forEach(_tokenizeGreentext);
+      }
+    }
+
+    MessageSegment _tokenizeSelf(String str) {
+      if (str.length >= 3 && str.substring(0, 3) == '/me') {
+        return MessageSegment('self', str.substring(3));
+      }
+      return MessageSegment('regular', str);
+    }
+
+    List<MessageSegment> _tokenizeSpoiler(String str) {
+      final List<MessageSegment> returnList = <MessageSegment>[];
+      final indexOne = str.indexOf('||');
+      if (indexOne != -1) {
+        final afterTag = str.substring(indexOne + 2);
+        final indexTwo = afterTag.indexOf('||');
+        if (indexTwo != -1) {
+          final betweenTags = afterTag.substring(0, indexTwo);
+          if (RegExp(r'^\s*$').hasMatch(betweenTags)) {
+            // checks for only whitespace in string
+            returnList.add(
+                MessageSegment('text', str.substring(0, indexOne) + '||||'));
+          } else {
+            returnList
+              ..add(MessageSegment('text',
+                  str.substring(0, indexOne) + str.substring(0, indexOne)))
+              ..add(MessageSegment('spoiler', betweenTags))
+              ..addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
+          }
+        }
+      } else {
+        returnList.add(MessageSegment('text', str));
+      }
+      return returnList;
+    }
+
+    void _tokenizeEmotes(MessageSegment base) {
+      final List<MessageSegment> returnList = <MessageSegment>[];
+      String tmpBuffer = '';
+      bool foundEmote = false;
+      if ((base.type == 'text' || base.type == 'spoiler') &&
+          base.subSegments.isEmpty) {
+        for (final String segment in base.data.split(' ')) {
+          final List<String> colonSplit = segment.split(':');
+          if (colonSplit.length == 1 && kEmotes.containsKey(segment)) {
+            foundEmote = true;
+            if (tmpBuffer.isNotEmpty) {
+              returnList.add(MessageSegment('text', '$tmpBuffer '));
+            }
+            tmpBuffer = '';
+            returnList.add(MessageSegment('emote', segment));
+          } else if (colonSplit.length == 2 &&
+              kEmotes.containsKey(colonSplit[0]) &&
+              kEmoteModifiers.contains(colonSplit[1])) {
+            foundEmote = true;
+            if (tmpBuffer.isNotEmpty) {
+              returnList.add(MessageSegment('text', '$tmpBuffer '));
+            }
+            tmpBuffer = '';
+            returnList.add(MessageSegment('emote', colonSplit[0],
+                modifier: colonSplit[1]));
+          } else {
+            tmpBuffer += ' $segment';
+          }
+        }
+        if (tmpBuffer.isNotEmpty) {
+          returnList.add(MessageSegment('text', '$tmpBuffer '));
+        }
+        if (foundEmote) {
+          base
+            ..data = ''
+            ..subSegments = returnList;
+        }
+      } else if (base.subSegments.isNotEmpty) {
+        base.subSegments.forEach(_tokenizeEmotes);
+      }
+    }
+
+    void _tokenizeLinks(MessageSegment base) {
+      if ((base.type == 'text' || base.type == 'spoiler') &&
+          base.subSegments.isEmpty) {
+        // TODO: improve regex
+        final RegExp reg = RegExp(
+            r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
+        final List<MessageSegment> newSegments = <MessageSegment>[];
+        final Iterable<RegExpMatch> matches = reg.allMatches(base.data);
+        if (matches.isNotEmpty) {
+          final List<String> withoutUrls = base.data.split(reg);
+          for (var i = 0; i < withoutUrls.length; i++) {
+            if (withoutUrls[i].isNotEmpty) {
+              newSegments.add(MessageSegment('text', withoutUrls[i]));
+            }
+            if (matches.length > i) {
+              newSegments
+                  // TODO: no !
+                  .add(MessageSegment('url', matches.elementAt(i).group(0)!));
+            }
+          }
+          base
+            ..subSegments = newSegments
+            ..data = '';
+        }
+      } else if (base.subSegments.isNotEmpty) {
+        base.subSegments.forEach(_tokenizeLinks);
+      }
+    }
+
+    void _flattenTree(MessageSegment base) {
+      if (base.subSegments.isNotEmpty) {
+        final List<MessageSegment> newList = [];
+        for (final MessageSegment s1 in base.subSegments) {
+          _flattenTree(s1);
+          if (s1.type == 'text' && s1.subSegments.isNotEmpty) {
+            final List<MessageSegment> tmpList = [];
+            s1.subSegments.forEach(tmpList.add);
+            newList.addAll(tmpList);
+          } else {
+            newList.add(s1);
+          }
+        }
+        base.subSegments = newList;
+      }
+    }
+
+    MessageSegment _tokenizeMessage(String message) {
+      // get /me
+      final MessageSegment base = _tokenizeSelf(message);
+      // get spoiler blocks
+      final List<MessageSegment> tmp = _tokenizeSpoiler(base.data);
+      base
+        ..data = ''
+        ..subSegments = tmp;
+      _recursiveCode(base);
+      _tokenizeGreentext(base);
+      _tokenizeLinks(base);
+      _tokenizeEmotes(base);
+      _flattenTree(base);
+
+      return base;
+    }
+
+    Set<String> recDetermineLinkModfier(
+        MessageSegment message, Set<String> modifierSet) {
+      if (message.subSegments.isNotEmpty) {
+        for (final subSegment in message.subSegments) {
+          if (subSegment.subSegments.isNotEmpty) {
+            modifierSet.addAll(
+                recDetermineLinkModfier(subSegment, modifierSet)); // rec down
+
+          } else {
+            if (subSegment.data.trim().length >= 4) {
+              for (final linkMod in linkModifiers) {
+                if (subSegment.data.contains(linkMod)) {
+                  modifierSet.add(linkMod);
+                  break; // we don't need to search any longer as the importance is front loaded
+                }
+              }
+            }
+          }
+        }
+      }
+      return modifierSet;
+    }
+
+    void _recAttatchLinkModifiers(MessageSegment message, String linkModifier) {
+      if (message.subSegments.isNotEmpty) {
+        for (final subSegment in message.subSegments) {
+          if (subSegment.subSegments.isNotEmpty) {
+            _recAttatchLinkModifiers(subSegment, linkModifier); // rec down
+
+          } else {
+            if (subSegment.type == 'url') {
+              subSegment.linkModifier = linkModifier;
+            }
+          }
+        }
+      }
+    }
+
+    void _attatchLinkModifiers(MessageSegment message) {
+      Set<String> linkModSet = {};
+      linkModSet = recDetermineLinkModfier(message, linkModSet);
+      for (final mod in linkModifiers) {
+        if (linkModSet.contains(mod)) {
+          _recAttatchLinkModifiers(message, mod);
+          break; // attach only most important modifier
+        }
+      }
+    }
+
+    final String msgString = parsedJson['data'];
+    final MessageSegment message = _tokenizeMessage(msgString);
+    _attatchLinkModifiers(message);
+    bool hasKwrd = false;
+    for (final String word in settings.wordsHighlighted) {
+      if (msgString.contains(word)) {
+        hasKwrd = true;
+        break;
+      }
+    }
+    if (hasKwrd) {}
+
+    return Message(
+        type: type,
+        nick: parsedJson['nick'],
+        timestamp: parsedJson['timestamp'] as int,
+        data: message,
+        messageData: msgString,
+        settings: settings,
+        hasKeyword: hasKwrd,
+        userNickname: userNickname,
+        mentioned: msgString.contains(userNickname),
+        comboCount: comboCount);
+  }
+
   String messageData;
   String type;
   String nick;
   int timestamp;
-  MessageSegment data;
-  bool hasKeyword;
-  bool mentioned;
-  Settings settings;
-  String userNickname;
-  int comboCount = 1;
-  List<String> comboUsers;
-  bool comboActive;
-  static const List linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
-  Message(
-      {this.type,
-      this.nick,
-      this.timestamp,
-      this.data,
-      this.settings,
-      this.hasKeyword,
-      this.mentioned,
-      this.userNickname,
-      this.messageData});
+  late MessageSegment data;
+  late bool hasKeyword;
+  late bool mentioned;
+  late Settings settings;
+  late String userNickname;
+  int comboCount;
+  List<String> comboUsers = [];
+  bool comboActive = false;
+  static const List<String> linkModifiers = ['nsfl', 'nsfw', 'loud', 'weeb'];
 
   @override
   String toString() {
@@ -298,8 +591,8 @@ class Message {
   }
 
   bool isOnlyEmote() {
-    if (data.type == 'regular' && data.subSegemnts.length == 1) {
-      if (data.subSegements[0].type == 'emote') {
+    if (data.type == 'regular' && data.subSegments.length == 1) {
+      if (data.subSegments[0].type == 'emote') {
         return true;
       }
     }
@@ -307,12 +600,12 @@ class Message {
   }
 
   bool shouldShow(Settings settings) {
-    for (String each in settings.wordsHidden) {
+    for (final String each in settings.wordsHidden) {
       if (messageData.toLowerCase().contains(each.toLowerCase())) {
         return false;
       }
     }
-    for (String each in settings.usersIgnored) {
+    for (final String each in settings.usersIgnored) {
       if (nick.toLowerCase().contains(each.toLowerCase())) {
         return false;
       }
@@ -322,7 +615,7 @@ class Message {
 
   Color getTagColor(Settings settings, String messageNick) {
     int i = 0;
-    for (var tag in settings.userTags.keys) {
+    for (final tag in settings.userTags.keys) {
       if (tag == messageNick) {
         return stringToColor(settings.userTags.values.elementAt(i));
       }
@@ -360,316 +653,32 @@ class Message {
 
   String readTimestamp() {
     if (timestamp != 0) {
-      DateTime d = DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
+      final DateTime d =
+          DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
       String hour = d.hour.toString();
       String minute = d.minute.toString();
       if (hour.length == 1) {
-        hour = '0' + hour;
+        hour = '0$hour';
       }
       if (minute.length == 1) {
-        minute = '0' + minute;
+        minute = '0$minute';
       }
       return '$hour:$minute';
     }
     return '';
   }
-
-  factory Message.fromJson(
-      String type, Map parsedJson, Settings settings, String userNickname) {
-    // ignore escaped backticks
-    int _findNextTick(String str) {
-      int base = 0;
-      while (str.isNotEmpty) {
-        var index = str.indexOf('`');
-        if (index == -1) {
-          return -1;
-        } else if (index - 1 >= 0 && str[(index - 1)] == '\\') {
-          base += index + 1;
-          str = str.substring(index + 1);
-        } else {
-          return index + base;
-        }
-      }
-      return -1;
-    }
-
-    List<MessageSegment> _tokenizeCode(String str) {
-      List<MessageSegment> returnList = <MessageSegment>[];
-      int indexOne = _findNextTick(str);
-      if (indexOne != -1) {
-        String beforeFirstTick = str.substring(0, indexOne);
-        String afterFirstTick = str.substring(indexOne + 1);
-        int indexTwo = _findNextTick(afterFirstTick);
-        if (indexTwo != -1) {
-          String betweenTicks = afterFirstTick.substring(0, indexTwo);
-          String afterSecondTick = afterFirstTick.substring(indexTwo + 1);
-          if (beforeFirstTick.isNotEmpty) {
-            returnList.add(MessageSegment('text', beforeFirstTick));
-          }
-          returnList.add(MessageSegment('code', betweenTicks));
-          if (afterSecondTick.isNotEmpty) {
-            returnList.addAll(_tokenizeCode(afterSecondTick));
-          }
-        }
-      } else {
-        returnList.add(MessageSegment('text', str));
-      }
-      return returnList;
-    }
-
-    void _recursiveCode(MessageSegment base) {
-      if (base.type == 'text' && base.subSegemnts == null) {
-        base.subSegemnts = _tokenizeCode(base.data);
-        base.data = '';
-      } else if (base.subSegemnts != null) {
-        for (MessageSegment segment in base.subSegemnts) {
-          _recursiveCode(segment);
-        }
-      }
-    }
-
-    void _tokenizeGreentext(MessageSegment base) {
-      if (base.type == 'text' && base.subSegemnts == null) {
-        RegExp greenReg = RegExp(r'^\s*>.*$');
-        if (greenReg.hasMatch(base.data)) {
-          base.modifier = 'green';
-        }
-      } else if (base.subSegemnts != null) {
-        for (MessageSegment segment in base.subSegemnts) {
-          _tokenizeGreentext(segment);
-        }
-      }
-    }
-
-    MessageSegment _tokenizeSelf(String str) {
-      if (str.length >= 3 && str.substring(0, 3) == '/me') {
-        return MessageSegment('self', str.substring(3));
-      }
-      return MessageSegment('regular', str);
-    }
-
-    List<MessageSegment> _tokenizeSpoiler(String str) {
-      List<MessageSegment> returnList = <MessageSegment>[];
-      var indexOne = str.indexOf('||');
-      if (indexOne != -1) {
-        var afterTag = str.substring(indexOne + 2);
-        var indexTwo = afterTag.indexOf('||');
-        if (indexTwo != -1) {
-          var betweenTags = afterTag.substring(0, indexTwo);
-          if (RegExp(r'^\s*$').hasMatch(betweenTags)) {
-            // checks for only whitespace in string
-            returnList.add(
-                MessageSegment('text', str.substring(0, indexOne) + '||||'));
-          } else {
-            returnList.add(MessageSegment('text',
-                str.substring(0, indexOne) + str.substring(0, indexOne)));
-            returnList.add(MessageSegment('spoiler', betweenTags));
-            returnList
-                .addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
-          }
-        }
-      } else {
-        returnList.add(MessageSegment('text', str));
-      }
-      return returnList;
-    }
-
-    void _tokenizeEmotes(MessageSegment base) {
-      List<MessageSegment> returnList = <MessageSegment>[];
-      String tmpBuffer = '';
-      bool foundEmote = false;
-      if ((base.type == 'text' || base.type == 'spoiler') &&
-          base.subSegemnts == null) {
-        for (String segment in base.data.split(' ')) {
-          List<String> colonSplit = segment.split(':');
-          if (colonSplit.length == 1 && kEmotes.containsKey(segment)) {
-            foundEmote = true;
-            if (tmpBuffer.isNotEmpty) {
-              returnList.add(MessageSegment('text', tmpBuffer + ' '));
-            }
-            tmpBuffer = '';
-            returnList.add(MessageSegment('emote', segment));
-          } else if (colonSplit.length == 2 &&
-              kEmotes.containsKey(colonSplit[0]) &&
-              kEmoteModifiers.contains(colonSplit[1])) {
-            foundEmote = true;
-            if (tmpBuffer.isNotEmpty) {
-              returnList.add(MessageSegment('text', tmpBuffer + ' '));
-            }
-            tmpBuffer = '';
-            returnList.add(MessageSegment('emote', colonSplit[0],
-                modifier: colonSplit[1]));
-          } else {
-            tmpBuffer += ' ' + segment;
-          }
-        }
-        if (tmpBuffer.isNotEmpty) {
-          returnList.add(MessageSegment('text', tmpBuffer + ' '));
-        }
-        if (foundEmote) {
-          base.data = '';
-          base.subSegemnts = returnList;
-        }
-      } else if (base.subSegemnts != null) {
-        for (MessageSegment segment in base.subSegemnts) {
-          _tokenizeEmotes(segment);
-        }
-      }
-    }
-
-    void _tokenizeLinks(MessageSegment base) {
-      if ((base.type == 'text' || base.type == 'spoiler') &&
-          base.subSegemnts == null) {
-        // TODO: improve regex
-        RegExp reg = RegExp(
-            r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
-        List<MessageSegment> newSegments = <MessageSegment>[];
-        Iterable<RegExpMatch> matches = reg.allMatches(base.data);
-        if (matches.isNotEmpty) {
-          List<String> withoutUrls = base.data.split(reg);
-          for (var i = 0; i < withoutUrls.length; i++) {
-            if (withoutUrls[i].isNotEmpty) {
-              newSegments.add(MessageSegment('text', withoutUrls[i]));
-            }
-            if (matches.length > i) {
-              newSegments
-                  .add(MessageSegment('url', matches.elementAt(i).group(0)));
-            }
-          }
-          base.subSegemnts = newSegments;
-          base.data = '';
-        }
-      } else if (base.subSegemnts != null) {
-        for (MessageSegment segment in base.subSegemnts) {
-          _tokenizeLinks(segment);
-        }
-      }
-    }
-
-    void _flattenTree(MessageSegment base) {
-      if (base.subSegemnts != null) {
-        List<MessageSegment> newList = [];
-        for (MessageSegment s1 in base.subSegemnts) {
-          _flattenTree(s1);
-          if (s1.type == 'text' &&
-              s1.modifier == null &&
-              s1.subSegemnts != null) {
-            bool canFlatten = true;
-            List<MessageSegment> tmpList = [];
-            for (MessageSegment s2 in s1.subSegemnts) {
-              tmpList.add(s2);
-            }
-            if (canFlatten) {
-              newList.addAll(tmpList);
-            } else {
-              newList.add(s1);
-            }
-          } else {
-            newList.add(s1);
-          }
-        }
-        base.subSegemnts = newList;
-      }
-    }
-
-    MessageSegment _tokenizeMessage(String message) {
-      // get /me
-      MessageSegment base = _tokenizeSelf(message);
-      // get spoiler blocks
-      List<MessageSegment> tmp = _tokenizeSpoiler(base.data);
-      base.data = '';
-      base.subSegemnts = tmp;
-      _recursiveCode(base);
-      _tokenizeGreentext(base);
-      _tokenizeLinks(base);
-      _tokenizeEmotes(base);
-      _flattenTree(base);
-
-      return base;
-    }
-
-    Set<String> recDetermineLinkModfier(
-        MessageSegment message, Set<String> modifierSet) {
-      if (message.subSegemnts != null) {
-        message.subSegemnts.forEach((subSegment) {
-          if (subSegment.subSegements != null) {
-            modifierSet.addAll(
-                recDetermineLinkModfier(subSegment, modifierSet)); // rec down
-
-          } else {
-            if (subSegment.data.trim().length >= 4) {
-              for (var linkMod in linkModifiers) {
-                if (subSegment.data.contains(linkMod)) {
-                  modifierSet.add(linkMod);
-                  break; // we don't need to search any longer as the importance is front loaded
-                }
-              }
-            }
-          }
-        });
-      }
-      return modifierSet;
-    }
-
-    void _recAttatchLinkModifiers(MessageSegment message, String linkModifier) {
-      if (message.subSegemnts != null) {
-        message.subSegemnts.forEach((subSegment) {
-          if (subSegment.subSegements != null) {
-            _recAttatchLinkModifiers(subSegment, linkModifier); // rec down
-
-          } else {
-            if (subSegment.type == 'url') {
-              subSegment.linkModifier = linkModifier;
-            }
-          }
-        });
-      }
-    }
-
-    void _attatchLinkModifiers(MessageSegment message) {
-      Set<String> linkModSet = {};
-      linkModSet = recDetermineLinkModfier(message, linkModSet);
-      for (var mod in linkModifiers) {
-        if (linkModSet.contains(mod)) {
-          _recAttatchLinkModifiers(message, mod);
-          break; // attach only most important modifier
-        }
-      }
-    }
-
-    String msgString = parsedJson['data'];
-    MessageSegment message = _tokenizeMessage(msgString);
-    _attatchLinkModifiers(message);
-    bool hasKwrd = false;
-    for (String word in settings.wordsHighlighted) {
-      if (msgString.contains(word)) {
-        hasKwrd = true;
-        break;
-      }
-    }
-    if (hasKwrd) {}
-
-    return Message(
-        messageData: msgString,
-        hasKeyword: hasKwrd,
-        userNickname: userNickname,
-        mentioned: msgString.contains(userNickname),
-        type: type,
-        nick: parsedJson['nick'],
-        timestamp: parsedJson['timestamp'] as int,
-        data: message);
-  }
 }
 
 class MessageSegment {
-  bool containsUsername;
+  MessageSegment(this.type, this.data,
+      {this.modifier = '', this.subSegments = const []});
+
   String type;
   String data;
-  String linkModifier;
   String modifier;
-  List<MessageSegment> subSegemnts;
+  String linkModifier = '';
   String get getLinkModifier => linkModifier;
-  List<MessageSegment> get subSegements => subSegemnts;
+  List<MessageSegment> subSegments;
 
   @override
   String toString() {
@@ -678,21 +687,19 @@ class MessageSegment {
 
   String toStringIndent(int depth) {
     String segs = '';
-    if (subSegemnts != null) {
-      for (MessageSegment segment in subSegemnts) {
+    if (subSegments.isNotEmpty) {
+      for (final MessageSegment segment in subSegments) {
         segs += '    ' * depth + segment.toStringIndent(depth + 1) + '\n';
       }
     }
-    String dataS = (data.isNotEmpty) ? ', data: "' + data + '" ' : '';
-    String mod = (modifier != null) ? ', mod: ' + modifier : '';
-    String newline =
-        (segs.isNotEmpty) ? '\n' + segs + '    ' * (depth - 1) + ']}' : ']}';
+    final String dataS = data.isNotEmpty ? ', data: "$data" ' : '';
+    final String mod = modifier.isNotEmpty ? ', mod: $modifier' : '';
+    final String newline =
+        segs.isNotEmpty ? '\n' + segs + '    ' * (depth - 1) + ']}' : ']}';
     return '{type: ' + type + mod + dataS + ', children: [' + newline;
   }
 
   String getData() {
     return data;
   }
-
-  MessageSegment(this.type, this.data, {this.modifier, this.subSegemnts});
 }

@@ -2,21 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class Storage {
-  FlutterSecureStorage _storage;
-  Map<String, String> _settings = <String, String>{};
-  Map<String, String> get getSettings => _settings;
+  Storage();
 
-  Storage() {
-    _storage = FlutterSecureStorage();
-  }
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  late Map<String, String> settings = <String, String>{};
 
   Future<void> initS() async {
-    _settings = await _storage.readAll();
+    settings = await _storage.readAll();
   }
 
   Future<void> loadSettings() async {
     WidgetsFlutterBinding.ensureInitialized();
-    _settings = await _storage.readAll();
+    settings = await _storage.readAll();
   }
 
   Future<void> deleteAll() async {
@@ -28,7 +25,7 @@ class Storage {
     print('adding: key: $key, value: $value');
     await _storage.write(key: key, value: value);
     await loadSettings();
-    String succ = _settings.containsKey(key).toString();
+    final String succ = settings.containsKey(key).toString();
     print('added successfully?: $succ');
   }
 
@@ -38,10 +35,10 @@ class Storage {
   }
 
   String getSetting(String key) {
-    return _settings[key];
+    return settings.containsKey(key) ? settings[key]! : '';
   }
 
   bool hasSetting(String key) {
-    return _settings.containsKey(key);
+    return settings.containsKey(key);
   }
 }
