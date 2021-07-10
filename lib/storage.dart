@@ -3,45 +3,45 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class Storage {
   FlutterSecureStorage _storage;
-  Map<String, String> _settings = new Map<String, String>();
-  get getSettings => _settings;
+  Map<String, String> _settings = <String, String>{};
+  Map<String, String> get getSettings => _settings;
 
   Storage() {
-    this._storage = new FlutterSecureStorage();
+    _storage = FlutterSecureStorage();
   }
 
   Future<void> initS() async {
-    this._settings = await this._storage.readAll();
+    _settings = await _storage.readAll();
   }
 
   Future<void> loadSettings() async {
     WidgetsFlutterBinding.ensureInitialized();
-    this._settings = await this._storage.readAll();
+    _settings = await _storage.readAll();
   }
 
-  void deleteAll() async {
-    await this._storage.deleteAll();
+  Future<void> deleteAll() async {
+    await _storage.deleteAll();
     await loadSettings();
   }
 
-  void addSetting(String key, String value) async {
+  Future<void> addSetting(String key, String value) async {
     print('adding: key: $key, value: $value');
-    await this._storage.write(key: key, value: value);
+    await _storage.write(key: key, value: value);
     await loadSettings();
-    String succ = this._settings.containsKey(key).toString();
-    print("added successfully?: $succ");
+    String succ = _settings.containsKey(key).toString();
+    print('added successfully?: $succ');
   }
 
-  void deleteSetting(String key) async {
-    await this._storage.delete(key: key);
+  Future<void> deleteSetting(String key) async {
+    await _storage.delete(key: key);
     await loadSettings();
   }
 
   String getSetting(String key) {
-    return this._settings[key];
+    return _settings[key];
   }
 
   bool hasSetting(String key) {
-    return this._settings.containsKey(key);
+    return _settings.containsKey(key);
   }
 }

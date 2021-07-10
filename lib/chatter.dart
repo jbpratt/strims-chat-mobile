@@ -15,16 +15,16 @@ class Chatter {
 }
 
 List<Chatter> buildChatterList(String input) {
-  List<dynamic> userList = jsonDecode(input)["users"];
+  List<dynamic> userList = jsonDecode(input)['users'];
   List<Chatter> output = [];
   for (int i = 0; i < userList.length; i++) {
-    Chatter newChatter = new Chatter();
+    Chatter newChatter = Chatter();
     newChatter.nick = userList[i]['nick'];
     output.add(newChatter);
   }
 
   // sort chatter list
-  output.sort((a,b) => a.nick.compareTo(b.nick));
+  output.sort((a, b) => a.nick.compareTo(b.nick));
   return output;
 }
 
@@ -36,12 +36,12 @@ class ChatterListRoute extends StatelessWidget {
   final List<Chatter> _chatterList;
 
   ChatterListRoute(this._chatterList);
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text("Chatters"),
+          title: Text('Chatters'),
         ),
         body: ListView(
           children: <Widget>[ChatterList(_chatterList)],

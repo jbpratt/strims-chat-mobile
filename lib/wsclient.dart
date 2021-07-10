@@ -13,10 +13,9 @@ class WSClient {
   }
 
   WebSocketChannel dial() {
-    print("opening channel");
-    channel = IOWebSocketChannel.connect(this.address,
-        headers:
-            token?.isNotEmpty == true ? {'Cookie': 'jwt=${this.token}'} : {});
+    print('opening channel');
+    channel = IOWebSocketChannel.connect(address,
+        headers: token?.isNotEmpty == true ? {'Cookie': 'jwt=$token'} : {});
     return channel;
   }
 }

@@ -20,15 +20,15 @@ class MessageList extends StatefulWidget {
 class _MessageListState extends State<MessageList> {
   final ScrollController _controller = ScrollController();
   // QUESTION: should this be private?
-  List<Message> messages;
+  final List<Message> messages;
   Settings _settings;
 
   _MessageListState(this.messages);
   @override
   Widget build(BuildContext context) {
-    this._settings = Provider.of<SettingsNotifier>(context).settings;
-    this.messages.retainWhere((message) => message
-        .shouldShow(this._settings)); // remove all hidden ignored messages
+    _settings = Provider.of<SettingsNotifier>(context).settings;
+    messages.retainWhere((message) =>
+        message.shouldShow(_settings)); // remove all hidden ignored messages
     return Container(
         color: _settings.bgColor,
         child: ListView.builder(
@@ -43,19 +43,19 @@ class _MessageListState extends State<MessageList> {
                 // TODO: do this properly
                 child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: new BorderRadius.all(Radius.circular(4)),
-                      gradient: new LinearGradient(stops: [
+                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                      gradient: LinearGradient(stops: [
                         0.02,
                         0.02
                       ], colors: [
-                        msg.getTagColor(this._settings, msg.nick),
+                        msg.getTagColor(_settings, msg.nick),
                         (msg.mentioned || msg.hasKeyword)
                             ? Color.fromARGB(255, 0, 37, 71)
                             : _settings.cardColor
                       ]),
                     ),
                     child: _MessageListItem(
-                        msg, this._settings, widget._userNickname)));
+                        msg, _settings, widget._userNickname)));
           },
         ));
   }
@@ -89,16 +89,16 @@ class _MessageListItem extends ListTile {
                   bottom: 8,
                 ),
                 child: Text.rich(TextSpan(
-                    text: _msg.type == "PRIVMSG"
-                        ? _msg.nick + " whispered"
+                    text: _msg.type == 'PRIVMSG'
+                        ? _msg.nick + ' whispered'
                         : _msg.nick,
                     style: TextStyle(
-                      backgroundColor: _msg.type == "PRIVMSG"
+                      backgroundColor: _msg.type == 'PRIVMSG'
                           ? Utilities.flipColor(_settings.cardColor, 50)
                           : null,
                       fontStyle:
-                          _msg.type == "PRIVMSG" ? FontStyle.italic : null,
-                      color: _msg.type == "PRIVMSG"
+                          _msg.type == 'PRIVMSG' ? FontStyle.italic : null,
+                      color: _msg.type == 'PRIVMSG'
                           ? Utilities.flipColor(
                               Utilities.flipColor(_settings.cardColor, 50), 100)
                           : Utilities.flipColor(_settings.cardColor, 100),
@@ -107,7 +107,7 @@ class _MessageListItem extends ListTile {
         onTap: () {});
   }
 
-  static _launchURL(String url) async {
+  static void _launchURL(String url) async {
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -115,7 +115,7 @@ class _MessageListItem extends ListTile {
     }
   }
 
-  static comboWidget(int comboAmount, bool comboActive) {
+  static List<InlineSpan> comboWidget(int comboAmount, bool comboActive) {
     var output = <InlineSpan>[];
     double fontSize = 15;
     FontWeight fontWeight = FontWeight.normal;
@@ -135,23 +135,22 @@ class _MessageListItem extends ListTile {
     } else if (comboAmount >= 5) {
       fontSize *= 1.5;
     }
-    TextSpan count = TextSpan(
-        text: " " + comboAmount.toString(),
-        style: TextStyle(fontSize: fontSize, fontWeight: fontWeight));
-    output.add(count);
-    TextSpan x = TextSpan(
-        text: " X ",
-        style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight));
-    output.add(x);
-    TextSpan name = TextSpan(
-        text: comboActive ? "HITS" : "C-C-C-COMBO",
-        style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight));
-    output.add(name);
+    // HACKER 7 X C-C-C-COMBO
+    // combo amount
+    output.add(TextSpan(
+        text: ' ' + comboAmount.toString(),
+        style: TextStyle(fontSize: fontSize, fontWeight: fontWeight)));
+    output.add(TextSpan(
+        text: ' X ',
+        style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight)));
+    output.add(TextSpan(
+        text: comboActive ? 'HITS' : 'C-C-C-COMBO',
+        style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight)));
     return output;
     //(comboActive ? "Hits" : "C-C-C-COMBO")
   }
 
-  static messageToWidget(
+  static List<InlineSpan> messageToWidget(
       MessageSegment segment,
       Settings settings,
       String userNick,
@@ -173,8 +172,8 @@ class _MessageListItem extends ListTile {
           }
         }
         switch (val.type) {
-          case "text":
-            TextSpan x = TextSpan(
+          case 'text':
+            output.add(TextSpan(
                 text: val.data
                     .toString()
                     .trimLeft(), // TODO: fix whitespace to left when emote in message
@@ -183,19 +182,18 @@ class _MessageListItem extends ListTile {
                 style: TextStyle(
                     color: Utilities.flipColor(settings.cardColor,
                         150), // TODO: implement a function for this
-                    background: Paint()..color = Colors.transparent));
-            output.add(x);
+                    background: Paint()..color = Colors.transparent)));
             break;
-          case "emote":
+          case 'emote':
             output.add(WidgetSpan(
               child: comboCount >= 10
-                  ? kEmotes["${val.data}"].img3X
+                  ? kEmotes['${val.data}'].img3X
                   : comboCount >= 2
-                      ? kEmotes["${val.data}"].img2X
-                      : kEmotes["${val.data}"].img,
+                      ? kEmotes['${val.data}'].img2X
+                      : kEmotes['${val.data}'].img,
             ));
             break;
-          case "url":
+          case 'url':
             //URL styling // there has to be a better way to do this
             var styleURL = TextStyle(
                 color: Colors.blue[400],
@@ -204,7 +202,7 @@ class _MessageListItem extends ListTile {
 
             if (val.getLinkModifier != null) {
               switch (val.getLinkModifier) {
-                case "nsfl":
+                case 'nsfl':
                   styleURL = TextStyle(
                       color: Colors.blue[400],
                       decoration: TextDecoration.underline,
@@ -212,7 +210,7 @@ class _MessageListItem extends ListTile {
                       decorationStyle: TextDecorationStyle.dashed,
                       background: Paint()..color = Colors.transparent);
                   break;
-                case "nsfw":
+                case 'nsfw':
                   styleURL = TextStyle(
                       color: Colors.blue[400],
                       decoration: TextDecoration.underline,
@@ -220,7 +218,7 @@ class _MessageListItem extends ListTile {
                       decorationStyle: TextDecorationStyle.dashed,
                       background: Paint()..color = Colors.transparent);
                   break;
-                case "loud":
+                case 'loud':
                   styleURL = TextStyle(
                       color: Colors.blue[400],
                       decoration: TextDecoration.underline,
@@ -228,7 +226,7 @@ class _MessageListItem extends ListTile {
                       decorationStyle: TextDecorationStyle.dashed,
                       background: Paint()..color = Colors.transparent);
                   break;
-                case "weeb":
+                case 'weeb':
                   styleURL = TextStyle(
                       color: Colors.blue[400],
                       decoration: TextDecoration.underline,
@@ -239,15 +237,14 @@ class _MessageListItem extends ListTile {
               }
             }
             //URL styling
-            TextSpan x = TextSpan(
+            output.add(TextSpan(
               text: val.data.toString(),
               style: styleURL,
-              recognizer: new TapGestureRecognizer()
+              recognizer: TapGestureRecognizer()
                 ..onTap = () => {_launchURL(val.data.toString())},
-            );
-            output.add(x);
+            ));
             break;
-          case "code":
+          case 'code':
             TextSpan x = TextSpan(
                 text: val.data.toString(),
                 style: TextStyle(
@@ -256,18 +253,17 @@ class _MessageListItem extends ListTile {
             output.add(x);
             break;
           default:
-            TextSpan x = TextSpan(
+            output.add(TextSpan(
                 children: messageToWidget(val, settings, userNick, senderNick,
-                    msgType, comboCount, comboActive));
-            output.add(x);
+                    msgType, comboCount, comboActive)));
             break;
         }
       });
       if (comboCount != 1) {
         output.addAll(comboWidget(comboCount, comboActive));
       }
-      return output;
     }
+    return output;
   }
 }
 
@@ -302,8 +298,8 @@ class Message {
   }
 
   bool isOnlyEmote() {
-    if (this.data.type == "regular" && this.data.subSegemnts.length == 1) {
-      if (this.data.subSegements[0].type == "emote") {
+    if (data.type == 'regular' && data.subSegemnts.length == 1) {
+      if (data.subSegements[0].type == 'emote') {
         return true;
       }
     }
@@ -312,12 +308,12 @@ class Message {
 
   bool shouldShow(Settings settings) {
     for (String each in settings.wordsHidden) {
-      if (this.messageData.toLowerCase().contains(each.toLowerCase())) {
+      if (messageData.toLowerCase().contains(each.toLowerCase())) {
         return false;
       }
     }
     for (String each in settings.usersIgnored) {
-      if (this.nick.toLowerCase().contains(each.toLowerCase())) {
+      if (nick.toLowerCase().contains(each.toLowerCase())) {
         return false;
       }
     }
@@ -337,55 +333,45 @@ class Message {
 
   Color stringToColor(String colorString) {
     switch (colorString) {
-      case "green":
+      case 'green':
         return Colors.green;
-        break;
-      case "yellow":
+      case 'yellow':
         return Colors.yellow;
-        break;
-      case "orange":
+      case 'orange':
         return Colors.orange;
-        break;
-      case "red":
+      case 'red':
         return Colors.red;
-        break;
-      case "purple":
+      case 'purple':
         return Colors.purple;
-        break;
-      case "blue":
+      case 'blue':
         return Colors.blue;
-        break;
-      case "sky":
+      case 'sky':
         return Colors.cyan;
-        break;
-      case "lime":
+      case 'lime':
         return Colors.lime;
-        break;
-      case "pink":
+      case 'pink':
         return Colors.pink;
-        break;
-      case "black":
+      case 'black':
         return Colors.grey;
-        break;
+      default:
+        return Colors.transparent;
     }
-    return Colors.transparent;
   }
 
   String readTimestamp() {
-    if (this.timestamp != 0) {
-      DateTime d =
-          new DateTime.fromMillisecondsSinceEpoch(this.timestamp, isUtc: true);
+    if (timestamp != 0) {
+      DateTime d = DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
       String hour = d.hour.toString();
       String minute = d.minute.toString();
       if (hour.length == 1) {
-        hour = "0" + hour;
+        hour = '0' + hour;
       }
       if (minute.length == 1) {
-        minute = "0" + minute;
+        minute = '0' + minute;
       }
-      return "$hour:$minute";
+      return '$hour:$minute';
     }
-    return "";
+    return '';
   }
 
   factory Message.fromJson(
@@ -393,7 +379,7 @@ class Message {
     // ignore escaped backticks
     int _findNextTick(String str) {
       int base = 0;
-      while (str.length > 0) {
+      while (str.isNotEmpty) {
         var index = str.indexOf('`');
         if (index == -1) {
           return -1;
@@ -408,7 +394,7 @@ class Message {
     }
 
     List<MessageSegment> _tokenizeCode(String str) {
-      List<MessageSegment> returnList = new List<MessageSegment>();
+      List<MessageSegment> returnList = <MessageSegment>[];
       int indexOne = _findNextTick(str);
       if (indexOne != -1) {
         String beforeFirstTick = str.substring(0, indexOne);
@@ -417,21 +403,21 @@ class Message {
         if (indexTwo != -1) {
           String betweenTicks = afterFirstTick.substring(0, indexTwo);
           String afterSecondTick = afterFirstTick.substring(indexTwo + 1);
-          if (beforeFirstTick.length > 0) {
-            returnList.add(new MessageSegment('text', beforeFirstTick));
+          if (beforeFirstTick.isNotEmpty) {
+            returnList.add(MessageSegment('text', beforeFirstTick));
           }
-          returnList.add(new MessageSegment('code', betweenTicks));
-          if (afterSecondTick.length > 0) {
+          returnList.add(MessageSegment('code', betweenTicks));
+          if (afterSecondTick.isNotEmpty) {
             returnList.addAll(_tokenizeCode(afterSecondTick));
           }
         }
       } else {
-        returnList.add(new MessageSegment('text', str));
+        returnList.add(MessageSegment('text', str));
       }
       return returnList;
     }
 
-    _recursiveCode(MessageSegment base) {
+    void _recursiveCode(MessageSegment base) {
       if (base.type == 'text' && base.subSegemnts == null) {
         base.subSegemnts = _tokenizeCode(base.data);
         base.data = '';
@@ -442,9 +428,9 @@ class Message {
       }
     }
 
-    _tokenizeGreentext(MessageSegment base) {
-      if (base.type == "text" && base.subSegemnts == null) {
-        RegExp greenReg = new RegExp(r'^\s*>.*$');
+    void _tokenizeGreentext(MessageSegment base) {
+      if (base.type == 'text' && base.subSegemnts == null) {
+        RegExp greenReg = RegExp(r'^\s*>.*$');
         if (greenReg.hasMatch(base.data)) {
           base.modifier = 'green';
         }
@@ -457,71 +443,71 @@ class Message {
 
     MessageSegment _tokenizeSelf(String str) {
       if (str.length >= 3 && str.substring(0, 3) == '/me') {
-        return new MessageSegment('self', str.substring(3));
+        return MessageSegment('self', str.substring(3));
       }
-      return new MessageSegment('regular', str);
+      return MessageSegment('regular', str);
     }
 
     List<MessageSegment> _tokenizeSpoiler(String str) {
-      List<MessageSegment> returnList = new List<MessageSegment>();
+      List<MessageSegment> returnList = <MessageSegment>[];
       var indexOne = str.indexOf('||');
       if (indexOne != -1) {
         var afterTag = str.substring(indexOne + 2);
         var indexTwo = afterTag.indexOf('||');
         if (indexTwo != -1) {
           var betweenTags = afterTag.substring(0, indexTwo);
-          if (new RegExp(r'^\s*$').hasMatch(betweenTags)) {
+          if (RegExp(r'^\s*$').hasMatch(betweenTags)) {
             // checks for only whitespace in string
-            returnList.add(new MessageSegment(
-                'text', str.substring(0, indexOne) + '||||'));
+            returnList.add(
+                MessageSegment('text', str.substring(0, indexOne) + '||||'));
           } else {
-            returnList.add(new MessageSegment('text',
+            returnList.add(MessageSegment('text',
                 str.substring(0, indexOne) + str.substring(0, indexOne)));
-            returnList.add(new MessageSegment('spoiler', betweenTags));
+            returnList.add(MessageSegment('spoiler', betweenTags));
             returnList
                 .addAll(_tokenizeSpoiler(afterTag.substring(indexTwo + 2)));
           }
         }
       } else {
-        returnList.add(new MessageSegment('text', str));
+        returnList.add(MessageSegment('text', str));
       }
       return returnList;
     }
 
-    _tokenizeEmotes(MessageSegment base) {
-      List<MessageSegment> returnList = new List<MessageSegment>();
-      String tmpBuffer = "";
+    void _tokenizeEmotes(MessageSegment base) {
+      List<MessageSegment> returnList = <MessageSegment>[];
+      String tmpBuffer = '';
       bool foundEmote = false;
       if ((base.type == 'text' || base.type == 'spoiler') &&
           base.subSegemnts == null) {
-        for (String segment in base.data.split(" ")) {
-          List<String> colonSplit = segment.split(":");
+        for (String segment in base.data.split(' ')) {
+          List<String> colonSplit = segment.split(':');
           if (colonSplit.length == 1 && kEmotes.containsKey(segment)) {
             foundEmote = true;
-            if (tmpBuffer.length > 0) {
-              returnList.add(new MessageSegment("text", tmpBuffer + " "));
+            if (tmpBuffer.isNotEmpty) {
+              returnList.add(MessageSegment('text', tmpBuffer + ' '));
             }
-            tmpBuffer = "";
-            returnList.add(new MessageSegment("emote", segment));
+            tmpBuffer = '';
+            returnList.add(MessageSegment('emote', segment));
           } else if (colonSplit.length == 2 &&
               kEmotes.containsKey(colonSplit[0]) &&
               kEmoteModifiers.contains(colonSplit[1])) {
             foundEmote = true;
-            if (tmpBuffer.length > 0) {
-              returnList.add(new MessageSegment("text", tmpBuffer + " "));
+            if (tmpBuffer.isNotEmpty) {
+              returnList.add(MessageSegment('text', tmpBuffer + ' '));
             }
-            tmpBuffer = "";
-            returnList.add(new MessageSegment("emote", colonSplit[0],
+            tmpBuffer = '';
+            returnList.add(MessageSegment('emote', colonSplit[0],
                 modifier: colonSplit[1]));
           } else {
-            tmpBuffer += " " + segment;
+            tmpBuffer += ' ' + segment;
           }
         }
-        if (tmpBuffer.length > 0) {
-          returnList.add(new MessageSegment("text", tmpBuffer + " "));
+        if (tmpBuffer.isNotEmpty) {
+          returnList.add(MessageSegment('text', tmpBuffer + ' '));
         }
         if (foundEmote) {
-          base.data = "";
+          base.data = '';
           base.subSegemnts = returnList;
         }
       } else if (base.subSegemnts != null) {
@@ -531,27 +517,27 @@ class Message {
       }
     }
 
-    _tokenizeLinks(MessageSegment base) {
+    void _tokenizeLinks(MessageSegment base) {
       if ((base.type == 'text' || base.type == 'spoiler') &&
           base.subSegemnts == null) {
         // TODO: improve regex
-        RegExp reg = new RegExp(
+        RegExp reg = RegExp(
             r'(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,20}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)');
-        List<MessageSegment> newSegments = new List<MessageSegment>();
+        List<MessageSegment> newSegments = <MessageSegment>[];
         Iterable<RegExpMatch> matches = reg.allMatches(base.data);
-        if (matches.length > 0) {
+        if (matches.isNotEmpty) {
           List<String> withoutUrls = base.data.split(reg);
           for (var i = 0; i < withoutUrls.length; i++) {
-            if (withoutUrls[i].length > 0) {
-              newSegments.add(new MessageSegment('text', withoutUrls[i]));
+            if (withoutUrls[i].isNotEmpty) {
+              newSegments.add(MessageSegment('text', withoutUrls[i]));
             }
             if (matches.length > i) {
-              newSegments.add(
-                  new MessageSegment('url', matches.elementAt(i).group(0)));
+              newSegments
+                  .add(MessageSegment('url', matches.elementAt(i).group(0)));
             }
           }
           base.subSegemnts = newSegments;
-          base.data = "";
+          base.data = '';
         }
       } else if (base.subSegemnts != null) {
         for (MessageSegment segment in base.subSegemnts) {
@@ -560,7 +546,7 @@ class Message {
       }
     }
 
-    _flattenTree(MessageSegment base) {
+    void _flattenTree(MessageSegment base) {
       if (base.subSegemnts != null) {
         List<MessageSegment> newList = [];
         for (MessageSegment s1 in base.subSegemnts) {
@@ -625,14 +611,14 @@ class Message {
       return modifierSet;
     }
 
-    _recAttatchLinkModifiers(MessageSegment message, String linkModifier) {
+    void _recAttatchLinkModifiers(MessageSegment message, String linkModifier) {
       if (message.subSegemnts != null) {
         message.subSegemnts.forEach((subSegment) {
           if (subSegment.subSegements != null) {
             _recAttatchLinkModifiers(subSegment, linkModifier); // rec down
 
           } else {
-            if (subSegment.type == "url") {
+            if (subSegment.type == 'url') {
               subSegment.linkModifier = linkModifier;
             }
           }
@@ -640,8 +626,8 @@ class Message {
       }
     }
 
-    _attatchLinkModifiers(MessageSegment message) {
-      Set<String> linkModSet = new Set();
+    void _attatchLinkModifiers(MessageSegment message) {
+      Set<String> linkModSet = {};
       linkModSet = recDetermineLinkModfier(message, linkModSet);
       for (var mod in linkModifiers) {
         if (linkModSet.contains(mod)) {
@@ -682,8 +668,8 @@ class MessageSegment {
   String linkModifier;
   String modifier;
   List<MessageSegment> subSegemnts;
-  get getLinkModifier => linkModifier;
-  get subSegements => subSegemnts;
+  String get getLinkModifier => linkModifier;
+  List<MessageSegment> get subSegements => subSegemnts;
 
   @override
   String toString() {
@@ -697,10 +683,10 @@ class MessageSegment {
         segs += '    ' * depth + segment.toStringIndent(depth + 1) + '\n';
       }
     }
-    String dataS = (data.length > 0) ? ', data: "' + data + '" ' : '';
+    String dataS = (data.isNotEmpty) ? ', data: "' + data + '" ' : '';
     String mod = (modifier != null) ? ', mod: ' + modifier : '';
     String newline =
-        (segs.length > 0) ? '\n' + segs + '    ' * (depth - 1) + ']}' : ']}';
+        (segs.isNotEmpty) ? '\n' + segs + '    ' * (depth - 1) + ']}' : ']}';
     return '{type: ' + type + mod + dataS + ', children: [' + newline;
   }
 

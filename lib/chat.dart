@@ -15,13 +15,14 @@ import 'emotes.dart';
 import 'messages.dart';
 import 'utilities.dart';
 
-final String kAppTitle = "Strims";
-final String kLogoPath = "assets/favicon.ico";
-final String kAddress = "wss://chat.strims.gg/ws";
+final String kAppTitle = 'Strims';
+final String kLogoPath = 'assets/favicon.ico';
+final String kAddress = 'wss://chat.strims.gg/ws';
 
-Browser inAppBrowser = new Browser();
-String jwt = "";
-String nick = "Anonymous";
+Browser inAppBrowser = Browser();
+String jwt = '';
+String nick = 'Anonymous';
+const String URL = 'https://strims.gg';
 
 class ChatPage extends StatefulWidget {
   @override
@@ -31,13 +32,13 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   TextEditingControllerWorkaroud controller;
   List<Message> messages = [];
-  WSClient ws = new WSClient(kAddress, token: jwt);
+  WSClient ws = WSClient(kAddress, token: jwt);
   List<InlineSpan> output = [];
   List<Chatter> chatters = [];
   List<String> autoCompleteSuggestions = [];
   ScrollController autoCompleteScrollController;
   Future<Map<String, Emote>> emotes;
-  Storage storage = new Storage();
+  Storage storage = Storage();
   String label;
   Settings settings;
   SettingsNotifier settingsNotifier;
@@ -65,9 +66,9 @@ class _ChatPageState extends State<ChatPage> {
     if (messages.last.messageData == message.messageData) {
       messages.last.comboCount = messages.last.comboCount + 1;
       if (messages.last.comboUsers == null) {
-        messages.last.comboUsers = new List<String>();
+        messages.last.comboUsers = <String>[];
         messages.last.comboUsers.add(messages.last.nick);
-        messages.last.nick = "comboMessage";
+        messages.last.nick = 'comboMessage';
       }
       messages.last.comboUsers.add(message.nick);
       messages.last.comboActive = true;
@@ -77,10 +78,10 @@ class _ChatPageState extends State<ChatPage> {
   void infoMsg(String msg) {
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     Message m = Message.fromJson(
-        "MSG",
+        'MSG',
         json.decode(
             '{"nick":"info","features":[],"timestamp":$timestamp,"data":"$msg"}'),
-        this.settings,
+        settings,
         nick);
 
     setState(() => addMessage(m));
@@ -98,49 +99,49 @@ class _ChatPageState extends State<ChatPage> {
   Message comboMessage(String emote, int combo) {
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     Message m = Message.fromJson(
-        "MSG",
+        'MSG',
         json.decode(
             '{"nick":"$combo X C-C-C-COMBO","features":[],"timestamp":$timestamp,"data":"$emote"}'),
-        this.settings,
+        settings,
         nick);
     m.comboCount = combo;
     return m;
   }
 
   Future<String> _getUsername(String jwt) async {
-    var headers = new Map<String, String>();
+    var headers = <String, String>{};
     headers['Cookie'] = 'jwt=$jwt';
     headers['user-agent'] = 'mobile.chat.strims.gg';
     Response response =
-        await get("https://strims.gg/api/profile", headers: headers);
+        await get(Uri.dataFromString('$URL/api/profile'), headers: headers);
     if (response.statusCode == 200) {
       var jsonResponse = jsonDecode(response.body);
       return jsonResponse['username'].toString();
     } else {
-      print("Request failed with status: ${response.statusCode}.");
+      print('Request failed with status: ${response.statusCode}.');
       return null;
     }
   }
 
   Future<void> _requestChatHistory() async {
-    var headers = new Map<String, String>();
+    var headers = <String, String>{};
     headers['user-agent'] = 'mobile.chat.strims.gg';
-    Response response =
-        await get("https://chat.strims.gg/api/chat/history", headers: headers);
+    Response response = await get(Uri.dataFromString('$URL/api/chat/history'),
+        headers: headers);
     if (response.statusCode == 200) {
       var jsonResponse = jsonDecode(response.body) as List;
       jsonResponse.forEach((i) => handleReceive(i.toString()));
     } else {
-      print("Request failed with status: ${response.statusCode}.");
+      print('Request failed with status: ${response.statusCode}.');
       return null;
     }
   }
 
   void listen() {
     _requestChatHistory().then((onValue) {
-      infoMsg("Connecting to chat.strims.gg ...");
+      infoMsg('Connecting to chat.strims.gg ...');
       WebSocketChannel channel = ws.dial();
-      infoMsg("Connection established");
+      infoMsg('Connection established');
       ws.channel = channel;
       ws.channel.stream.listen((onData) {
         if (onData is String) {
@@ -152,15 +153,13 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
-  void login() async {
+  Future<void> login() async {
     // if already logged in then open profile
-    await inAppBrowser.open(url: "https://strims.gg/login", options: {
-      "useShouldOverrideUrlLoading": true,
-    }).then((val) {
-      inAppBrowser.onLoadStop("https://strims.gg/").then((onValue) {
-        inAppBrowser.getCookie("jwt").then((map) {
-          String tmp = map['value'];
-          if (tmp != null && tmp.length > 0) {
+    await inAppBrowser.open(url: '$URL/login').then((val) {
+      inAppBrowser.onLoadStop('$URL/').then((onValue) {
+        inAppBrowser.getCookie('jwt').then((cookie) {
+          String tmp = cookie.value;
+          if (tmp != null && tmp.isNotEmpty) {
             jwt = tmp;
             updateToken();
             storage.addSetting('jwt', jwt);
@@ -179,7 +178,7 @@ class _ChatPageState extends State<ChatPage> {
 
   void resetChannel() {
     ws.channel.sink.close();
-    infoMsg("reconnecting...");
+    infoMsg('reconnecting...');
     listen();
   }
 
@@ -192,21 +191,21 @@ class _ChatPageState extends State<ChatPage> {
     kEmotes = await getEmotes();
   }
 
-  void _getAndSaveUsername() async {
+  Future<void> _getAndSaveUsername() async {
     nick = await _getUsername(jwt);
-    storage.addSetting('nick', nick);
+    await storage.addSetting('nick', nick);
   }
 
   @override
   void initState() {
     super.initState();
-    this.storage.initS().then((val) {
-      infoMsg("checking storage for user");
-      if (this.storage.hasSetting('jwt')) {
-        infoMsg("found user in storage");
+    storage.initS().then((val) {
+      infoMsg('checking storage for user');
+      if (storage.hasSetting('jwt')) {
+        infoMsg('found user in storage');
         setState(() {
-          jwt = this.storage.getSetting('jwt');
-          nick = this.storage.getSetting('nick');
+          jwt = storage.getSetting('jwt');
+          nick = storage.getSetting('nick');
           label = determineLabel();
         });
       }
@@ -215,7 +214,7 @@ class _ChatPageState extends State<ChatPage> {
       listen();
     });
     controller = TextEditingControllerWorkaroud();
-    autoCompleteScrollController = new ScrollController();
+    autoCompleteScrollController = ScrollController();
 
     controller.addListener(_updateAutocompleteSuggestions);
     getAllEmotes();
@@ -225,26 +224,25 @@ class _ChatPageState extends State<ChatPage> {
     await showDialog(
         context: context,
         builder: (BuildContext context) {
-          if (nick != "Anonymous" && jwt.isNotEmpty) {
+          if (nick != 'Anonymous' && jwt.isNotEmpty) {
             // TODO: remove the popup somehow
           }
           return AlertDialog(
-            title: new Text("Whoops!"),
-            content: new Text("You must first sign in to chat"),
+            title: Text('Whoops!'),
+            content: Text('You must first sign in to chat'),
             actions: <Widget>[
-              new FlatButton(
-                child: new Text("Sign in"),
+              TextButton(
                 onPressed: () async {
-                  login();
+                  await login();
                 },
+                child: Text('Sign in'),
               ),
-              new FlatButton(
-                child: new Text("Close"),
-                onPressed: () {
-                  Navigator.pop(context);
-                  this.resetOnPopupClose();
-                },
-              )
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    resetOnPopupClose();
+                  },
+                  child: Text('Close'))
             ],
           );
         });
@@ -252,189 +250,190 @@ class _ChatPageState extends State<ChatPage> {
 
   void handleTagHighlightIgnore(String input) {
     List colors = [
-      "green",
-      "yellow",
-      "orange",
-      "red",
-      "purple",
-      "blue",
-      "sky",
-      "lime",
-      "pink",
-      "black"
+      'green',
+      'yellow',
+      'orange',
+      'red',
+      'purple',
+      'blue',
+      'sky',
+      'lime',
+      'pink',
+      'black'
     ];
     //TODO: regex this
     // prepare yourself for spaghetti
     String inputNoWhitespace = input;
     bool test = true;
     while (test) {
-      if (inputNoWhitespace.contains("  ")) {
-        inputNoWhitespace = inputNoWhitespace.replaceAll("  ", " ");
+      if (inputNoWhitespace.contains('  ')) {
+        inputNoWhitespace = inputNoWhitespace.replaceAll('  ', ' ');
       } else {
         test = false;
       }
     }
-    List output = inputNoWhitespace.split(" ");
-    switch (output[0].toString().replaceAll("/", "")) {
-      case "highlight":
+    List output = inputNoWhitespace.split(' ');
+    switch (output[0].toString().replaceAll('/', '')) {
+      case 'highlight':
         if (output.length == 1 || output[1].isEmpty) {
-          infoMsg(settings.wordsHighlighted.length < 1
-              ? "No highlighted words, syntax : \/highlight {word}"
-              : "Highlighted words : " +
+          infoMsg(settings.wordsHighlighted.isEmpty
+              ? 'No highlighted words, syntax : \/highlight {word}'
+              : 'Highlighted words : ' +
                   settings.wordsHighlighted
                       .toString()
-                      .replaceAll("{", "")
-                      .replaceAll("}", ""));
+                      .replaceAll('{', '')
+                      .replaceAll('}', ''));
         } else if (output.length >= 2) {
-          infoMsg("Highlighting " + output[1]);
-          this.settingsNotifier.addWordsHighlighted(output[1]);
+          infoMsg('Highlighting ' + output[1]);
+          settingsNotifier.addWordsHighlighted(output[1]);
         }
         break;
-      case "unhighlight":
+      case 'unhighlight':
         if (output.length == 1 || output[1].isEmpty) {
-          infoMsg(settings.wordsHighlighted.length < 1
-              ? "No highlighted words, syntax : \/unhighlight {word}"
-              : "Highlighted words : " +
+          infoMsg(settings.wordsHighlighted.isEmpty
+              ? 'No highlighted words, syntax : \/unhighlight {word}'
+              : 'Highlighted words : ' +
                   settings.wordsHighlighted
                       .toString()
-                      .replaceAll("{", "")
-                      .replaceAll("}", ""));
+                      .replaceAll('{', '')
+                      .replaceAll('}', ''));
         } else if (output.length >= 2) {
-          infoMsg("No longer highlighting " + output[1]);
-          this.settingsNotifier.removeWordsHighlighted(output[1]);
+          infoMsg('No longer highlighting ' + output[1]);
+          settingsNotifier.removeWordsHighlighted(output[1]);
         }
         break;
-      case "tag":
+      case 'tag':
         if (output.length == 1 || output[1].isEmpty) {
-          infoMsg(settings.userTags.length < 1
-              ? "No tagged users, syntax : \/tag {user} {color}" +
-                  ". Available colors: " +
-                  colors.toString().replaceAll("[", "").replaceAll("]", "")
-              : "Highlighted users : " +
+          infoMsg(settings.userTags.isEmpty
+              ? 'No tagged users, syntax : \/tag {user} {color}'
+                      '. Available colors: ' +
+                  colors.toString().replaceAll('[', '').replaceAll(']', '')
+              : 'Highlighted users : ' +
                   settings.userTags
                       .toString()
-                      .replaceAll("{", "")
-                      .replaceAll("}", "") +
-                  ". Available colors: " +
-                  colors.toString().replaceAll("[", "").replaceAll("]", ""));
+                      .replaceAll('{', '')
+                      .replaceAll('}', '') +
+                  '. Available colors: ' +
+                  colors.toString().replaceAll('[', '').replaceAll(']', ''));
         } else if (output.length == 2 || output[2].isEmpty) {
           var color = colors[Random().nextInt(colors.length - 1)];
-          infoMsg("Tagged " + output[1] + " as " + color);
-          this.settingsNotifier.addUserTags(output[1], color);
+          infoMsg('Tagged ' + output[1] + ' as ' + color);
+          settingsNotifier.addUserTags(output[1], color);
         } else if (output.length >= 3) {
-          String color = "";
+          String color = '';
           if (!colors.contains(output[2].toLowerCase())) {
             color = colors[Random().nextInt(colors.length - 1)];
           } else {
             color = output[2].toLowerCase();
           }
-          infoMsg("Tagged " + output[1] + " as " + color);
-          this.settingsNotifier.addUserTags(output[1], color);
+          infoMsg('Tagged ' + output[1] + ' as ' + color);
+          settingsNotifier.addUserTags(output[1], color);
         }
         break;
-      case "untag":
+      case 'untag':
         if (output.length == 1 || output[1].isEmpty) {
-          infoMsg(settings.userTags.length < 1
-              ? "No tagged users, syntax : \/untag {user} {color}" +
-                  ". Available colors: " +
-                  colors.toString().replaceAll("[", "").replaceAll("]", "")
-              : "Highlighted users : " +
+          infoMsg(settings.userTags.isEmpty
+              ? 'No tagged users, syntax : \/untag {user} {color}'
+                      '. Available colors: ' +
+                  colors.toString().replaceAll('[', '').replaceAll(']', '')
+              : 'Highlighted users : ' +
                   settings.userTags
                       .toString()
-                      .replaceAll("{", "")
-                      .replaceAll("}", "") +
-                  ". Available colors: " +
-                  colors.toString().replaceAll("[", "").replaceAll("]", ""));
+                      .replaceAll('{', '')
+                      .replaceAll('}', '') +
+                  '. Available colors: ' +
+                  colors.toString().replaceAll('[', '').replaceAll(']', ''));
         } else if (output.length >= 2) {
-          infoMsg("Un-tagged " + output[1]);
-          this.settingsNotifier.removeUserTags(output[1]);
+          infoMsg('Un-tagged ' + output[1]);
+          settingsNotifier.removeUserTags(output[1]);
         }
         break;
-      case "ignore":
+      case 'ignore':
         if (output.length == 1 || output[1].isEmpty) {
-          infoMsg(settings.usersIgnored.length < 1
-              ? "Your ignore list is empty, syntax : \/ignore {user}"
-              : "Ignored Users : " +
+          infoMsg(settings.usersIgnored.isEmpty
+              ? 'Your ignore list is empty, syntax : \/ignore {user}'
+              : 'Ignored Users : ' +
                   settings.usersIgnored
                       .toString()
-                      .replaceAll("{", "")
-                      .replaceAll("}", ""));
+                      .replaceAll('{', '')
+                      .replaceAll('}', ''));
         } else if (output.length >= 2) {
-          infoMsg("Ignoring " + output[1]);
-          this.settingsNotifier.addUsersIgnored(output[1]);
+          infoMsg('Ignoring ' + output[1]);
+          settingsNotifier.addUsersIgnored(output[1]);
         }
         break;
-      case "unignore":
+      case 'unignore':
         if (output.length == 1 || output[1].isEmpty) {
-          infoMsg(settings.usersIgnored.length < 1
-              ? "Your ignore list is empty, syntax : \/unignore {user}"
-              : "Ignored Users : " +
+          infoMsg(settings.usersIgnored.isEmpty
+              ? 'Your ignore list is empty, syntax : \/unignore {user}'
+              : 'Ignored Users : ' +
                   settings.usersIgnored
                       .toString()
-                      .replaceAll("{", "")
-                      .replaceAll("}", ""));
+                      .replaceAll('{', '')
+                      .replaceAll('}', ''));
         } else if (output.length >= 2) {
-          infoMsg(output[1] + " has been removed from your ignore list");
-          this.settingsNotifier.removeUsersIgnored(output[1]);
+          infoMsg(output[1] + ' has been removed from your ignore list');
+          settingsNotifier.removeUsersIgnored(output[1]);
         }
         break;
-      case "hide":
+      case 'hide':
         if (output.length == 1 || output[1].isEmpty) {
-          infoMsg(settings.wordsHidden.length < 1
-              ? "You have no hidden words : \/hide {word}"
-              : "Hidden words : " +
+          infoMsg(settings.wordsHidden.isEmpty
+              ? 'You have no hidden words : \/hide {word}'
+              : 'Hidden words : ' +
                   settings.wordsHidden
                       .toString()
-                      .replaceAll("{", "")
-                      .replaceAll("}", ""));
+                      .replaceAll('{', '')
+                      .replaceAll('}', ''));
         } else if (output.length >= 2) {
-          infoMsg("Hiding messages including " + output[1]);
-          this.settingsNotifier.addWordsHidden(output[1]);
+          infoMsg('Hiding messages including ' + output[1]);
+          settingsNotifier.addWordsHidden(output[1]);
         }
         break;
-      case "unhide":
+      case 'unhide':
         if (output.length == 1 || output[1].isEmpty) {
-          infoMsg(settings.wordsHidden.length < 1
-              ? "You have no hidden words : \/unhide {word}"
-              : "Hidden words : " +
+          infoMsg(settings.wordsHidden.isEmpty
+              ? 'You have no hidden words : \/unhide {word}'
+              : 'Hidden words : ' +
                   settings.wordsHidden
                       .toString()
-                      .replaceAll("{", "")
-                      .replaceAll("}", ""));
+                      .replaceAll('{', '')
+                      .replaceAll('}', ''));
         } else if (output.length >= 2) {
-          infoMsg("No longer hiding messages including " + output[1]);
-          this.settingsNotifier.removeWordsHidden(output[1]);
+          infoMsg('No longer hiding messages including ' + output[1]);
+          settingsNotifier.removeWordsHidden(output[1]);
         }
         break;
       default:
-        infoMsg("please try re-typing your command");
+        infoMsg('please try re-typing your command');
         break;
     }
   }
 
   void sendData() {
-    if (jwt == null || jwt == "") {
+    if (jwt == null || jwt == '') {
       _showLoginDialog();
     }
 
     if (controller.text.isNotEmpty) {
-      var text = controller.text;
-      // if first two chars are '/w' or '/msg' or '/message' or '/tell' or '/notify' or '/t'  or '/whisper' // <- all pms
-      // if user is auth as moderator // '/ban' or '/mute'
+      String text = controller.text;
+      // if first two chars are '/w' or '/msg' or '/message' or '/tell' or
+      // '/notify' or '/t'  or '/whisper' // <- all pms if user is auth as
+      // moderator // '/ban' or '/mute'
 
       if (text[0] == '/') {
         // TODO: trim left for function check ?
-        //TODO: lowercase functions ?
+        // TODO: lowercase functions ?
 
         // TODO: handle all "/" functions
-        if (text.contains(new RegExp(
-            r"^\/((highlight)|(unhighlight)|(tag)|(untag)|(ignore)|(unignore)|(hide)|(unhide))"))) {
+        if (text.contains(RegExp(
+            r'^\/((highlight)|(unhighlight)|(tag)|(untag)|(ignore)|(unignore)|(hide)|(unhide))'))) {
           handleTagHighlightIgnore(text);
-        } else if (text.contains(new RegExp(
-            r"^\/(w|(whisper)|(message)|(msg)|t|(tell)|(notify))"))) {
+        } else if (text.contains(
+            RegExp(r'^\/(w|(whisper)|(message)|(msg)|t|(tell)|(notify))'))) {
           // is private message
 
-          List<String> splitText = text.split(new RegExp(r"\s"));
+          List<String> splitText = text.split(RegExp(r'\s'));
           String username = splitText[1];
 
           bool found = false;
@@ -448,13 +447,13 @@ class _ChatPageState extends State<ChatPage> {
 
           if (!found) {
             infoMsg(
-                "the user you are trying to talk to is currently not in chat UwU");
+                'the user you are trying to talk to is currently not in chat UwU');
             print(
-                "the user you are trying to talk to is currently not in chat UwU");
+                'the user you are trying to talk to is currently not in chat UwU');
             return;
           }
 
-          String body = splitText.sublist(2).join(" ");
+          String body = splitText.sublist(2).join(' ');
 
           ws.channel.sink.add(
               'PRIVMSG {"nick":"' + username + '", "data":"' + body + '"}');
@@ -464,7 +463,7 @@ class _ChatPageState extends State<ChatPage> {
       }
     }
 
-    controller.text = "";
+    controller.text = '';
   }
 
   void sendDataKeyboard(String data) {
@@ -472,17 +471,17 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   // First index is type, then data
-  List parseMsg(String msg) {
+  List<String> parseMsg(String msg) {
     return [
-      msg.split(new RegExp(r"{[^}]*}"))[0].trim(),
-      msg.split(new RegExp(r"^[^ ]*"))[1]
+      msg.split(RegExp(r'{[^}]*}'))[0].trim(),
+      msg.split(RegExp(r'^[^ ]*'))[1]
     ];
   }
 
   void handleReceive(String msg) {
     var wsResponse = parseMsg(msg);
     switch (wsResponse[0]) {
-      case "NAMES":
+      case 'NAMES':
         setState(() {
           chatters.addAll(buildChatterList(wsResponse[1]));
         });
@@ -491,22 +490,22 @@ class _ChatPageState extends State<ChatPage> {
         infoMsg(
             'Currently serving $count connections and ${chatters.length} users');
         break;
-      case "MSG":
-        Message m = new Message.fromJson(
-            wsResponse[0], json.decode(wsResponse[1]), this.settings, nick);
+      case 'MSG':
+        Message m = Message.fromJson(
+            wsResponse[0], json.decode(wsResponse[1]), settings, nick);
         setState(() => addMessage(m));
         break;
-      case "PRIVMSG":
-        Message m = new Message.fromJson(
-            wsResponse[0], json.decode(wsResponse[1]), this.settings, nick);
+      case 'PRIVMSG':
+        Message m = Message.fromJson(
+            wsResponse[0], json.decode(wsResponse[1]), settings, nick);
         setState(() => addMessage(m));
         break;
-      case "JOIN":
+      case 'JOIN':
         // TODO: implement join/leave for user list (visual)
         //Chatter c = new Chatter.fromJson(json.decode(wsResponse[1]));
         // print("JOIN : " + wsResponse[1]);
         break;
-      case "QUIT":
+      case 'QUIT':
         // print("QUIT : " + wsResponse[1]);
         break;
       default:
@@ -520,21 +519,20 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   String determineLabel() {
-    if (nick == null || nick.isEmpty || nick == "Anonymous") {
-      return "You need to be signed in to chat";
+    if (nick == null || nick.isEmpty || nick == 'Anonymous') {
+      return 'You need to be signed in to chat';
     } else {
       return 'Write something $nick ...';
     }
   }
 
-  _sendComboEmote() {
-    if (jwt == null || jwt == "") {
+  void _sendComboEmote() {
+    if (jwt == null || jwt == '') {
       _showLoginDialog();
       return;
     }
-    if (this.messages.last.isOnlyEmote()) {
-      ws.channel.sink
-          .add('MSG {"data":"' + this.messages.last.messageData + '"}');
+    if (messages.last.isOnlyEmote()) {
+      ws.channel.sink.add('MSG {"data":"' + messages.last.messageData + '"}');
     }
   }
 
@@ -560,17 +558,17 @@ class _ChatPageState extends State<ChatPage> {
 
   // TODO: base autocomplete on cursor position and not end of string
   void _updateAutocompleteSuggestions() {
-    List<String> results = new List();
+    List<String> results = [];
     // gets the last word with any trailing spaces
-    RegExp exp = new RegExp(r":?[a-zA-Z]*\s*$");
+    RegExp exp = RegExp(r':?[a-zA-Z]*\s*$');
     String lastWord = exp.stringMatch(controller.text).trim();
 
-    if (lastWord.startsWith(":")) {
+    if (lastWord.startsWith(':')) {
       lastWord = lastWord.substring(1);
       for (String mod in kEmoteModifiers) {
         if (mod.toLowerCase().startsWith(lastWord.toLowerCase()) &&
             mod != lastWord) {
-          results.add(":" + mod);
+          results.add(':' + mod);
         }
       }
     } else {
@@ -578,7 +576,7 @@ class _ChatPageState extends State<ChatPage> {
       for (String emoteName in kEmotes.keys) {
         if (emoteName.toLowerCase() == lastWord.toLowerCase()) {
           if (emoteName == lastWord) {
-            results.add(":");
+            results.add(':');
           } else {
             results.add(emoteName);
           }
@@ -597,12 +595,13 @@ class _ChatPageState extends State<ChatPage> {
         }
       }
     }
-    if (autoCompleteScrollController.hasClients) { // stops us from accessing this when not attached to a list
+    if (autoCompleteScrollController.hasClients) {
+      // stops us from accessing this when not attached to a list
       autoCompleteScrollController.jumpTo(0);
     }
 
     setState(() {
-      if (controller.text.isEmpty) { 
+      if (controller.text.isEmpty) {
         results.shuffle();
       }
       autoCompleteSuggestions = results;
@@ -613,18 +612,18 @@ class _ChatPageState extends State<ChatPage> {
     String oldText = controller.text;
     String newText;
     oldText = oldText.trimRight();
-    if (input == ":") {
-      newText = oldText + ": ";
-    } else if (input.startsWith(":")) {
-      int index = oldText.lastIndexOf(new RegExp(r":[a-zA-Z]*$"));
+    if (input == ':') {
+      newText = oldText + ': ';
+    } else if (input.startsWith(':')) {
+      int index = oldText.lastIndexOf(RegExp(r':[a-zA-Z]*$'));
       if (index < 0) index = 0;
       oldText = oldText.substring(0, index);
-      newText = oldText + input + " ";
+      newText = oldText + input + ' ';
     } else {
-      int index = oldText.lastIndexOf(new RegExp(r"\s[a-zA-Z]*$"));
+      int index = oldText.lastIndexOf(RegExp(r'\s[a-zA-Z]*$'));
       if (index < 0) index = 0;
       oldText = oldText.substring(0, index);
-      newText = oldText + " " + input + " ";
+      newText = oldText + ' ' + input + ' ';
     }
     controller.setTextAndPosition(newText);
   }
@@ -632,23 +631,23 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     label = determineLabel();
-    this.settingsNotifier = Provider.of<SettingsNotifier>(context);
-    this.settings = Provider.of<SettingsNotifier>(context).settings;
+    settingsNotifier = Provider.of<SettingsNotifier>(context);
+    settings = Provider.of<SettingsNotifier>(context).settings;
 
     Color headerColor = Utilities.flipColor(settings.bgColor, 100);
     return Scaffold(
         floatingActionButton: _isComboButtonShown()
             ? FloatingActionButton(
                 onPressed: _sendComboEmote,
+                backgroundColor: Colors.transparent,
                 child: ConstrainedBox(
                   constraints: BoxConstraints.expand(),
-                  child: kEmotes[messages.last.messageData.split(":")[0]]
+                  child: kEmotes[messages.last.messageData.split(':')[0]]
                       .img, // TODO : remove when emote modifiers are added
-                ),
-                backgroundColor: Colors.transparent)
+                ))
             : Container(),
-        appBar: new AppBar(
-          iconTheme: new IconThemeData(
+        appBar: AppBar(
+          iconTheme: IconThemeData(
             color: Utilities.flipColor(headerColor, 100),
           ),
           backgroundColor: headerColor,
@@ -661,7 +660,7 @@ class _ChatPageState extends State<ChatPage> {
                 height: 24,
               ),
               Container(
-                  padding: const EdgeInsets.all(8.0), child: Text('Strims'))
+                  padding: const EdgeInsets.all(8.0), child: Text(kAppTitle))
             ],
           ),
           elevation: 0.0,
@@ -720,11 +719,11 @@ class _ChatPageState extends State<ChatPage> {
                       ));
                 },
               ),
-              RaisedButton(
+              ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    nick = "Anonymous";
-                    jwt = "";
+                    nick = 'Anonymous';
+                    jwt = '';
                     updateToken();
                   });
 
@@ -754,9 +753,9 @@ class _ChatPageState extends State<ChatPage> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: <Widget>[
                   Form(
-                      child: new Flexible(
-                    child: new TextFormField(
-                      decoration: new InputDecoration(
+                      child: Flexible(
+                    child: TextFormField(
+                      decoration: InputDecoration(
                         labelText: label,
                         filled: true,
                       ),
@@ -766,7 +765,7 @@ class _ChatPageState extends State<ChatPage> {
                   )),
                   ButtonTheme(
                     minWidth: 20.0,
-                    child: FlatButton(
+                    child: TextButton(
                       onPressed: () {
                         sendData();
                       },
@@ -786,12 +785,12 @@ class _ChatPageState extends State<ChatPage> {
               controller: autoCompleteScrollController,
               itemBuilder: (BuildContext ctx, int index) {
                 //
-                return FlatButton(
-                    child: kEmotes.containsKey(autoCompleteSuggestions[index])
-                        ? kEmotes["${autoCompleteSuggestions[index]}"].img
-                        : Text(autoCompleteSuggestions[index]),
+                return TextButton(
                     onPressed: () =>
-                        {_insertAutocomplete(autoCompleteSuggestions[index])});
+                        {_insertAutocomplete(autoCompleteSuggestions[index])},
+                    child: kEmotes.containsKey(autoCompleteSuggestions[index])
+                        ? kEmotes['${autoCompleteSuggestions[index]}'].img
+                        : Text(autoCompleteSuggestions[index]));
               },
             ),
           )
@@ -804,7 +803,7 @@ class WhispersRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text("Whispers"),
+          title: Text('Whispers'),
         ),
         body: Column(children: <Widget>[]));
   }
