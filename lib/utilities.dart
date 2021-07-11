@@ -1,6 +1,42 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
+
+class EnumValues<T> {
+  EnumValues(this.map);
+
+  Map<String, T> map;
+
+  Map<T, String> get reverse {
+    return map.map((k, v) => MapEntry(v, k));
+  }
+}
+
+Color colorFromName(String name) {
+  switch (name) {
+    case 'green':
+      return Colors.green;
+    case 'yellow':
+      return Colors.yellow;
+    case 'orange':
+      return Colors.orange;
+    case 'red':
+      return Colors.red;
+    case 'purple':
+      return Colors.purple;
+    case 'blue':
+      return Colors.blue;
+    case 'sky':
+      return Colors.cyan;
+    case 'lime':
+      return Colors.lime;
+    case 'pink':
+      return Colors.pink;
+    case 'black':
+      return Colors.grey;
+    default:
+      return Colors.transparent;
+  }
+}
 
 class TextEditingControllerWorkaroud extends TextEditingController {
   TextEditingControllerWorkaroud({String text = ''}) : super(text: text);

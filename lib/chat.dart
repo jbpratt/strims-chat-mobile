@@ -1,29 +1,24 @@
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:provider/provider.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 // import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide Storage;
 
 import 'browser.dart';
 import 'chatter.dart';
-import 'emotes.dart';
+//import 'constants.dart';
+import 'emote_manifest.dart';
 import 'messages.dart';
 import 'settings.dart';
 import 'storage.dart';
 import 'utilities.dart';
-import 'wsclient.dart';
+import 'ws/client.dart';
+import 'ws/types.dart';
 
 const String kAppTitle = 'Strims';
 const String kLogoPath = 'assets/favicon.ico';
-const String kAddress = 'wss://chat.strims.gg/ws';
-const String kURL = 'https://chat.strims.gg';
 
 Browser inAppBrowser = Browser();
-String jwt = '';
-String nick = 'Anonymous';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({Key? key}) : super(key: key);
@@ -34,123 +29,83 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   List<Message> messages = [];
-  WSClient ws = WSClient(kAddress, auth: jwt);
   List<InlineSpan> output = [];
   List<Chatter> chatters = [];
   List<String> autoCompleteSuggestions = [];
-  Storage storage = Storage();
+
+  late WSClient ws;
+  late Storage storage;
   late String label;
   late Settings settings;
   late SettingsNotifier settingsNotifier;
   late TextEditingControllerWorkaroud controller;
   late ScrollController autoCompleteScrollController;
+  late Manifest manifest;
 
   // add message , check if message & last in list is same emote
   // if combo, adds combo message // else just adds message
-  void addMessage(Message message) {
-    if (isNotCombo(message)) {
-      if (messages.isNotEmpty) {
-        if (messages.length > settings.maxMessages) {
-          messages.removeRange(
-              0,
-              (messages.length - settings.batchDeleteAmount < 0)
-                  ? 0
-                  : settings.batchDeleteAmount);
-        }
-      }
-      if (messages.isNotEmpty) {
-        messages.last.comboActive = false;
-      }
-      messages.add(message);
-
-      return;
-    }
-    if (messages.last.messageData == message.messageData) {
-      messages.last.comboCount = messages.last.comboCount + 1;
-      if (messages.last.comboUsers.isEmpty) {
-        messages.last.comboUsers = <String>[];
-        messages.last.comboUsers.add(messages.last.nick);
-        messages.last.nick = 'comboMessage';
-      }
-      messages.last.comboUsers.add(message.nick);
-      messages.last.comboActive = true;
-    }
+  void addMessage(Message msg) {
+//    if (isNotCombo(message)) {
+//      if (messages.isNotEmpty) {
+//        if (messages.length > settings.maxMessages) {
+//          messages.removeRange(
+//              0,
+//              (messages.length - settings.batchDeleteAmount < 0)
+//                  ? 0
+//                  : settings.batchDeleteAmount);
+//        }
+//      }
+//      if (messages.isNotEmpty) {
+//        messages.last.comboActive = false;
+//      }
+    setState(() => messages.add(msg));
+//    }
+//    if (messages.last.messageData == message.messageData) {
+//      messages.last.comboCount = messages.last.comboCount + 1;
+//      if (messages.last.comboUsers.isEmpty) {
+//        messages.last.comboUsers = <String>[];
+//        messages.last.comboUsers.add(messages.last.nick);
+//        messages.last.nick = 'comboMessage';
+//      }
+//      messages.last.comboUsers.add(message.nick);
+//      messages.last.comboActive = true;
+//    }
   }
 
   void infoMsg(String msg) {
-    final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    final Message m = Message.fromJson(
-        'MSG',
-        json.decode(
-            '{"nick":"info","features":[],"timestamp":$timestamp,"data":"$msg"}'),
-        settings,
-        nick);
-
-    setState(() => addMessage(m));
+    debugPrint('info msg: ${msg.toString()}');
+    addMessage(Message(
+        nick: 'info',
+        features: [],
+        data: msg,
+        type: MsgType.MSG,
+        entities: null,
+        timestamp: DateTime.now().millisecondsSinceEpoch));
   }
-
-  bool isNotCombo(Message message) {
-    if (messages.isEmpty ||
-        !message.isOnlyEmote() ||
-        messages.last.messageData != message.messageData) {
-      return true;
-    }
-    return false;
-  }
-
-  Message comboMessage(String emote, int combo) {
-    final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    return Message.fromJson(
-        'MSG',
-        json.decode(
-            '{"nick":"$combo X C-C-C-COMBO","features":[],"timestamp":$timestamp,"data":"$emote"}'),
-        settings,
-        nick,
-        comboCount: combo);
-  }
-
-  Future<String> _getUsername(String jwt) async {
-    final headers = <String, String>{
-      'Cookie': 'jwt=$jwt',
-      'user-agent': 'mobile.chat.strims.gg'
-    };
-    final Response response =
-        await get(Uri.parse('$kURL/api/profile'), headers: headers);
-    if (response.statusCode == 200) {
-      final jsonResponse = jsonDecode(response.body);
-      return jsonResponse['username'].toString();
-    } else {
-      print('Request failed with status: ${response.statusCode}.');
-      return '';
-    }
-  }
-
-  Future<void> _requestChatHistory() async {
-    final headers = <String, String>{'user-agent': 'mobile.chat.strims.gg'};
-    final Response response =
-        await get(Uri.parse('$kURL/api/chat/history'), headers: headers);
-    if (response.statusCode == 200) {
-      print(response.body);
-      final jsonResponse = jsonDecode(response.body) as List;
-      jsonResponse.forEach((i) => handleReceive(i.toString()));
-    } else {
-      print('Request failed with status: ${response.statusCode}.');
-    }
-  }
+//
+//  Message comboMessage(String emote, int combo) {
+//    final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+//    return Message.fromJson(
+//        'MSG',
+//        json.decode(
+//            '{"nick":"$combo X C-C-C-COMBO","features":[],"timestamp":$timestamp,"data":"$emote"}'),
+//        settings,
+//        ws.user,
+//        comboCount: combo);
+//  }
 
   void listen() {
-    _requestChatHistory().then((onValue) {
+    ws.history().then((List<Message>? history) {
+      if (history != null) {
+        history.forEach(addMessage);
+      }
       infoMsg('Connecting to chat.strims.gg ...');
-      final WebSocketChannel channel = ws.dial();
+      ws
+        ..onMsgFunc = onMsg
+        ..onPrivMsgFunc = onPrivMsg
+        ..dial()
+        ..listen();
       infoMsg('Connection established');
-      ws.channel = channel;
-      ws.channel.stream.listen((onData) {
-        if (onData is String) {
-          handleReceive(onData);
-        }
-      }, onError: (error) {
-        print(error.toString());
-      });
     });
   }
 
@@ -177,58 +132,39 @@ class _ChatPageState extends State<ChatPage> {
 //    });
   }
 
-  void updateToken() {
-    ws.token = jwt;
-  }
+  void resetOnPopupClose() => ws.reset();
 
-  void resetChannel() {
-    ws.channel.sink.close();
-    infoMsg('reconnecting...');
-    listen();
-  }
-
-  void resetOnPopupClose() {
-    updateToken();
-    resetChannel();
-  }
-
-  Future<void> getAllEmotes() async => kEmotes = await getEmotes();
-
-  Future<void> _getAndSaveUsername() async {
-    nick = await _getUsername(jwt);
-    await storage.addSetting('nick', nick);
-  }
+  Future<void> fetchManifest() async =>
+      manifest = await Manifest.fromURL(kEmoteManifest);
 
   @override
   void initState() {
     super.initState();
-    storage.initS().then((val) {
+    ws = WSClient();
+    storage = Storage();
+    storage.initS().then((_) {
       infoMsg('checking storage for user');
       if (storage.hasSetting('jwt')) {
         infoMsg('found user in storage');
         setState(() {
-          jwt = storage.getSetting('jwt');
-          nick = storage.getSetting('nick');
+          ws.login(storage.getSetting('jwt'));
           label = determineLabel();
         });
       }
-    }).then((val) {
-      updateToken();
+    }).then((_) {
+      fetchManifest();
       listen();
     });
     controller = TextEditingControllerWorkaroud();
     autoCompleteScrollController = ScrollController();
-
-    controller.addListener(_updateAutocompleteSuggestions);
-    getAllEmotes();
-    if (jwt.isNotEmpty) _getAndSaveUsername();
+//    controller.addListener(_updateAutocompleteSuggestions);
   }
 
   Future<void> _showLoginDialog() async {
     await showDialog(
         context: context,
         builder: (BuildContext context) {
-          if (nick != 'Anonymous' && jwt.isNotEmpty) {
+          if (ws.user != 'Anonymous' && ws.token.isNotEmpty) {
             // TODO: remove the popup somehow
           }
           return AlertDialog(
@@ -413,7 +349,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void sendData() {
-    if (jwt.isEmpty) {
+    if (!ws.isAuthenticated) {
       _showLoginDialog();
       return;
     }
@@ -458,10 +394,10 @@ class _ChatPageState extends State<ChatPage> {
 
           final String body = splitText.sublist(2).join(' ');
 
-          ws.channel.sink.add('PRIVMSG {"nick":"$username", "data":"$body"}');
+          ws.send('PRIVMSG {"nick":"$username", "data":"$body"}');
         }
       } else {
-        ws.channel.sink.add('MSG {"data":"$text"}');
+        ws.send('MSG {"data":"$text"}');
       }
     }
 
@@ -470,155 +406,119 @@ class _ChatPageState extends State<ChatPage> {
 
   void sendDataKeyboard(String data) => sendData();
 
-  // First index is type, then data
-  List<String> parseMsg(String msg) {
-    return [
-      msg.split(RegExp('{[^}]*}'))[0].trim(),
-      msg.split(RegExp('^[^ ]*'))[1]
-    ];
-  }
+  void onMsg(Message msg) => addMessage(msg);
 
-  void handleReceive(String msg) {
-    final wsResponse = parseMsg(msg);
-    switch (wsResponse[0]) {
-      case 'NAMES':
-        setState(() {
-          chatters.addAll(buildChatterList(wsResponse[1]));
-        });
-        final count = getConnectionCount(wsResponse[1]);
-        _updateAutocompleteSuggestions();
-        infoMsg(
-            'Currently serving $count connections and ${chatters.length} users');
-        break;
-      case 'MSG':
-        final Message m = Message.fromJson(
-            wsResponse[0], json.decode(wsResponse[1]), settings, nick);
-        setState(() => addMessage(m));
-        break;
-      case 'PRIVMSG':
-        final Message m = Message.fromJson(
-            wsResponse[0], json.decode(wsResponse[1]), settings, nick);
-        setState(() => addMessage(m));
-        break;
-      case 'JOIN':
-        // TODO: implement join/leave for user list (visual)
-        //Chatter c = new Chatter.fromJson(json.decode(wsResponse[1]));
-        // print("JOIN : " + wsResponse[1]);
-        break;
-      case 'QUIT':
-        // print("QUIT : " + wsResponse[1]);
-        break;
-      default:
-    }
-  }
+  void onPrivMsg(Message msg) => addMessage(msg);
 
   @override
   void dispose() {
-    ws.channel.sink.close();
+    ws.close();
     super.dispose();
   }
 
   String determineLabel() {
-    if (nick.isEmpty || nick == 'Anonymous') {
+    if (!ws.isAuthenticated) {
       return 'You need to be signed in to chat';
     } else {
-      return 'Write something $nick ...';
+      return 'Write something ${ws.user}...';
     }
   }
 
-  void _sendComboEmote() {
-    if (jwt.isEmpty) {
-      _showLoginDialog();
-      return;
-    }
-    if (messages.last.isOnlyEmote()) {
-      ws.channel.sink.add('MSG {"data":"${messages.last.messageData}"}');
-    }
-  }
-
-  bool _isComboButtonShown() {
-    if (messages.isNotEmpty && messages.last.isOnlyEmote()) {
-      if (messages.last.comboUsers.isEmpty) {
-        return messages.last.nick != nick;
-      } else {
-        return !messages.last.comboUsers.contains(nick);
-      }
-    } else {
-      return false;
-    }
-  }
+//  void _sendComboEmote() {
+//    if (!ws.isAuthenticated) {
+//      _showLoginDialog();
+//      return;
+//    }
+//    if (messages.last.isOnlyEmote()) {
+//      ws.send('MSG {"data":"${messages.last.messageData}"}');
+//    }
+//  }
+//
+//  bool _isComboButtonShown() {
+//    if (messages.isNotEmpty && messages.last.isOnlyEmote()) {
+//      if (messages.last.comboUsers.isEmpty) {
+//        return messages.last.nick != ws.user;
+//      } else {
+//        return !messages.last.comboUsers.contains(ws.user);
+//      }
+//    } else {
+//      return false;
+//    }
+//  }
 
   // TODO: base autocomplete on cursor position and not end of string
-  void _updateAutocompleteSuggestions() {
-    final List<String> results = [];
-    // gets the last word with any trailing spaces
-    final RegExp exp = RegExp(r':?[a-zA-Z]*\s*$');
-    String lastWord = exp.stringMatch(controller.text)!.trim();
-
-    if (lastWord.startsWith(':')) {
-      lastWord = lastWord.substring(1);
-      for (final String mod in kEmoteModifiers) {
-        if (mod.toLowerCase().startsWith(lastWord.toLowerCase()) &&
-            mod != lastWord) {
-          results.add(':$mod');
-        }
-      }
-    } else {
-      // check emotes
-      for (final String emoteName in kEmotes.keys) {
-        if (emoteName.toLowerCase() == lastWord.toLowerCase()) {
-          if (emoteName == lastWord) {
-            results.add(':');
-          } else {
-            results.add(emoteName);
-          }
-        } else if (emoteName.toLowerCase().startsWith(lastWord.toLowerCase()) ||
-            controller.text.isEmpty) {
-          results.add(emoteName);
-        }
-      }
-
-      // check chatters
-      for (final Chatter chatter in chatters) {
-        if ((chatter.nick.toLowerCase().startsWith(lastWord.toLowerCase()) ||
-                controller.text.isEmpty) &&
-            chatter.nick != lastWord) {
-          results.add(chatter.nick);
-        }
-      }
-    }
-    if (autoCompleteScrollController.hasClients) {
-      // stops us from accessing this when not attached to a list
-      autoCompleteScrollController.jumpTo(0);
-    }
-
-    setState(() {
-      if (controller.text.isEmpty) {
-        results.shuffle();
-      }
-      autoCompleteSuggestions = results;
-    });
-  }
-
-  void _insertAutocomplete(String input) {
-    String oldText = controller.text;
-    String newText;
-    oldText = oldText.trimRight();
-    if (input == ':') {
-      newText = oldText + ': ';
-    } else if (input.startsWith(':')) {
-      int index = oldText.lastIndexOf(RegExp(r':[a-zA-Z]*$'));
-      if (index < 0) index = 0;
-      oldText = oldText.substring(0, index);
-      newText = oldText + input + ' ';
-    } else {
-      int index = oldText.lastIndexOf(RegExp(r'\s[a-zA-Z]*$'));
-      if (index < 0) index = 0;
-      oldText = oldText.substring(0, index);
-      newText = oldText + ' ' + input + ' ';
-    }
-    controller.setTextAndPosition(newText);
-  }
+//  void _updateAutocompleteSuggestions() {
+//    final List<String> results = [];
+//    // gets the last word with any trailing spaces
+//    final RegExp exp = RegExp(r':?[a-zA-Z]*\s*$');
+//    String lastWord = exp.stringMatch(controller.text)!.trim();
+//
+//    if (lastWord.startsWith(':')) {
+//      lastWord = lastWord.substring(1);
+//      for (final String mod in manifest.modifiers) {
+//        if (mod.toLowerCase().startsWith(lastWord.toLowerCase()) &&
+//            mod != lastWord) {
+//          results.add(':$mod');
+//        }
+//      }
+//    } else {
+//      // check emotes
+//      for (final Emote emote in manifest.emotes) {
+//        if (emote.name.toLowerCase() == lastWord.toLowerCase()) {
+//          if (emote.name == lastWord) {
+//            results.add(':');
+//          } else {
+//            results.add(emote.name);
+//          }
+//        } else if (emote.name
+//                .toLowerCase()
+//                .startsWith(lastWord.toLowerCase()) ||
+//            controller.text.isEmpty) {
+//          results.add(emote.name);
+//        }
+//      }
+//
+//      // check chatters
+//      for (final Chatter chatter in chatters) {
+//        if ((chatter.nick.toLowerCase().startsWith(lastWord.toLowerCase()) ||
+//                controller.text.isEmpty) &&
+//            chatter.nick != lastWord) {
+//          results.add(chatter.nick);
+//        }
+//      }
+//    }
+//    if (autoCompleteScrollController.hasClients) {
+//      // stops us from accessing this when not attached to a list
+//      autoCompleteScrollController.jumpTo(0);
+//    }
+//
+//    setState(() {
+//      if (controller.text.isEmpty) {
+//        results.shuffle();
+//      }
+//      autoCompleteSuggestions = results;
+//    });
+//  }
+//
+//  void _insertAutocomplete(String input) {
+//    String oldText = controller.text;
+//    String newText;
+//    oldText = oldText.trimRight();
+//    if (input == ':') {
+//      newText = oldText + ': ';
+//    } else if (input.startsWith(':')) {
+//      int index = oldText.lastIndexOf(RegExp(r':[a-zA-Z]*$'));
+//      if (index < 0) index = 0;
+//      oldText = oldText.substring(0, index);
+//      newText = oldText + input + ' ';
+//    } else {
+//      int index = oldText.lastIndexOf(RegExp(r'\s[a-zA-Z]*$'));
+//      if (index < 0) index = 0;
+//      oldText = oldText.substring(0, index);
+//      newText = oldText + ' ' + input + ' ';
+//    }
+//    controller.setTextAndPosition(newText);
+//  }
 
   @override
   Widget build(BuildContext context) {
@@ -627,17 +527,28 @@ class _ChatPageState extends State<ChatPage> {
     settings = Provider.of<SettingsNotifier>(context).settings;
 
     final Color headerColor = Utilities.flipColor(settings.bgColor, 100);
+
+    // TODO: move this to map lookup
+//    late Emote emote;
+//    for (final e in manifest.emotes) {
+//      if (e.name == messages.last.messageData.split(':')[0]) {
+//        emote = e;
+//        break;
+//      }
+//    }
+
     return Scaffold(
-        floatingActionButton: _isComboButtonShown()
-            ? FloatingActionButton(
-                onPressed: _sendComboEmote,
-                backgroundColor: Colors.transparent,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints.expand(),
-                  child: kEmotes[messages.last.messageData.split(':')[0]]!
-                      .img, // TODO : remove when emote modifiers are added
-                ))
-            : Container(),
+        // TODO: floating combo button disabled
+//        floatingActionButton: _isComboButtonShown()
+//            ? FloatingActionButton(
+//                onPressed: _sendComboEmote,
+//                backgroundColor: Colors.transparent,
+//                child: ConstrainedBox(
+//                  constraints: const BoxConstraints.expand(),
+//                  child: emote.images[Size
+//                      .THE_2_X], // TODO : remove when emote modifiers are added
+//                ))
+//            : Container(),
         appBar: AppBar(
           iconTheme: IconThemeData(
             color: Utilities.flipColor(headerColor, 100),
@@ -706,21 +617,17 @@ class _ChatPageState extends State<ChatPage> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => WhispersRoute(),
+                        builder: (context) => const WhispersRoute(),
                       ));
                 },
               ),
               ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    nick = 'Anonymous';
-                    jwt = '';
-                    updateToken();
+                    ws.logout();
                   });
-
                   storage..deleteSetting('jwt')..deleteSetting('nick');
-
-                  resetChannel();
+                  ws.reset();
                   // reset conn
                   Navigator.of(context).pop();
                   setState(() {
@@ -761,25 +668,26 @@ class _ChatPageState extends State<ChatPage> {
             ]),
           ),
           Expanded(
-            child: ListView(children: <Widget>[MessageList(messages, nick)]),
+            child: ListView(children: <Widget>[MessageList(messages, ws.user)]),
           ),
-          Container(
-            height: 50,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: autoCompleteSuggestions.length,
-              controller: autoCompleteScrollController,
-              itemBuilder: (BuildContext ctx, int index) {
-                //
-                return TextButton(
-                    onPressed: () =>
-                        {_insertAutocomplete(autoCompleteSuggestions[index])},
-                    child: kEmotes.containsKey(autoCompleteSuggestions[index])
-                        ? kEmotes[autoCompleteSuggestions[index]]!.img
-                        : Text(autoCompleteSuggestions[index]));
-              },
-            ),
-          )
+//          Container(
+//            height: 50,
+//            child: ListView.builder(
+//              scrollDirection: Axis.horizontal,
+//              itemCount: autoCompleteSuggestions.length,
+//              controller: autoCompleteScrollController,
+//              itemBuilder: (BuildContext ctx, int index) {
+////                final e = manifest.emote(autoCompleteSuggestions[index]);
+//                return TextButton(
+//                    onPressed: () =>
+//                        {_insertAutocomplete(autoCompleteSuggestions[index])},
+//                    child: // e != null
+//                        //? e.images[Size.THE_2_X]!
+//                        //:
+//                        Text(autoCompleteSuggestions[index]));
+//              },
+//            ),
+//          )
         ]));
   }
 }

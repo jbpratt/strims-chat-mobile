@@ -14,14 +14,14 @@ description: Mobile chat.strims.gg
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
+  sdk: ">=2.13.0 <3.0.0"
 
 dependencies:
-  unicode: ^0.3.1
 
   flutter:
     sdk: flutter
 
+  unicode: ^0.3.1
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.3
@@ -32,6 +32,8 @@ dependencies:
   url_launcher: any
   provider: ^5.0.0
   flutter_colorpicker: ^0.5.0
+  cached_network_image: ^3.0.0
+  tuple: ^2.0.0
 
 dev_dependencies:
   flutter_launcher_icons: ^0.9.0
