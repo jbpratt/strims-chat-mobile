@@ -80,7 +80,7 @@ linter:
     - missing_whitespace_between_adjacent_strings
     - no_adjacent_strings_in_list
     - no_duplicate_case_values
-    - no_logic_in_create_state
+    # - no_logic_in_create_state
     - no_runtimeType_toString
     - non_constant_identifier_names
     - null_closures
@@ -136,7 +136,7 @@ linter:
     - slash_for_doc_comments
     - sort_child_properties_last
     - sort_constructors_first
-    - sort_pub_dependencies
+    # - sort_pub_dependencies
     - sort_unnamed_constructors_first
     - test_types_in_equals
     - throw_in_finally

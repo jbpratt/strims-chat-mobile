@@ -288,7 +288,7 @@ class _ChatPageState extends State<ChatPage> {
                   Navigator.of(context).pop();
                   Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      MaterialPageRoute<SettingsRoute>(
                         builder: (context) => SettingsRoute(
                             settings), // TODO: fix settings widget position in tree
                       ));
@@ -301,7 +301,7 @@ class _ChatPageState extends State<ChatPage> {
                   Navigator.of(context).pop();
                   Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      MaterialPageRoute<SettingsRoute>(
                         builder: (context) => ChatterListRoute(chatters),
                       ));
                 },
@@ -313,7 +313,7 @@ class _ChatPageState extends State<ChatPage> {
                   Navigator.of(context).pop();
                   Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      MaterialPageRoute<WhispersRoute>(
                         builder: (context) => const WhispersRoute(),
                       ));
                 },
