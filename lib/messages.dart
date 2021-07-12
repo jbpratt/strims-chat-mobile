@@ -75,11 +75,11 @@ class _MessageListItem extends ListTile {
   @override
   Widget build(BuildContext context) {
     Color tileColor = _settings.cardColor;
-    if (_msg.nick == 'info') {
+    if (_msg.user!.nick == 'info') {
       tileColor = colorFromName('sky');
     }
 
-    if (_msg.nick == _userNickname) {
+    if (_msg.user!.nick == _userNickname) {
       tileColor = Utilities.lightenColor(_settings.cardColor, 10);
     }
 
@@ -100,8 +100,8 @@ class _MessageListItem extends ListTile {
             ),
             child: Text.rich(TextSpan(
                 text: _msg.type == MsgType.PRIVMSG
-                    ? '${_msg.nick} whispered'
-                    : _msg.nick,
+                    ? '${_msg.user!.nick} whispered'
+                    : _msg.user!.nick,
                 style: TextStyle(
                   backgroundColor: _msg.type == MsgType.PRIVMSG
                       ? Utilities.flipColor(_settings.cardColor, 50)

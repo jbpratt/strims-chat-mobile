@@ -4,60 +4,69 @@ import 'package:tuple/tuple.dart';
 
 import '../utilities.dart';
 
-// final message = messageFromMap(jsonString);
+// First index is type, then data
+Tuple2<MsgType, String> _parseMsgType(String msg) {
+  final split = msg.split(' ');
+  final t = split[0].trim();
+  final m = split.sublist(1).join(' ');
+  // this is safe because _parseMsg is only called after a MsgType switch
+  return Tuple2<MsgType, String>(msgTypeValues.map[t]!, m);
+}
+
 class Message {
   Message({
-    required this.nick,
-    required this.features,
-    required this.timestamp,
+    this.user,
+    this.timestamp,
+    this.entities,
     required this.data,
-    required this.entities,
     required this.type,
   });
 
-  factory Message.fromJson(String str) => Message.fromMap(json.decode(str));
+  factory Message.fromJson(MsgType type, String str) =>
+      Message.fromMap(type, json.decode(str));
 
-  // TODO: pass type in?
-  factory Message.fromMap(Map<String, dynamic> json) => Message(
-        nick: json['nick'],
-        features: List<String>.from(json['features'].map((dynamic x) => x)),
+  factory Message.fromMap(MsgType type, Map<String, dynamic> json) => Message(
+        user: User(nick: json['nick'], features: [...json['features']]),
         timestamp: json['timestamp'],
-        data: json['data'],
         entities: Entities.fromMap(json['entities']),
-        type: null,
+        data: json['data'],
+        type: type,
       );
 
   factory Message.fromWire(String msg) {
-    final raw = _parseMsg(msg);
+    final raw = _parseMsgType(msg);
     print('raw: $msg');
-    return Message.fromJson(raw.item2)..type = raw.item1;
+    return Message.fromJson(raw.item1, raw.item2);
   }
 
-  // First index is type, then data
-  static Tuple2<MsgType, String> _parseMsg(String msg) {
-    final split = msg.split(' ');
-    final t = split[0].trim();
-    final m = split.sublist(1).join(' ');
-    // this is safe because _parseMsg is only called after a MsgType switch
-    return Tuple2<MsgType, String>(msgTypeValues.map[t]!, m);
-  }
-
-  final String nick;
-  final List<String> features;
-  final int timestamp;
   final String data;
+  final MsgType type;
+  final User? user;
+  final int? timestamp;
   final Entities? entities;
-  MsgType? type;
 
   String toJson() => json.encode(toMap()..removeWhere((_, v) => v == null));
 
   Map<String, dynamic> toMap() => {
-        'nick': nick,
-        'features': List<dynamic>.from(features.map((x) => x)),
+        'user': user?.toMap(),
         'timestamp': timestamp,
         'data': data,
+        'type': msgTypeValues.reverse[type],
         'entities': entities?.toMap(),
       };
+
+  String toWireString() {
+    final output = json
+        .encode(toMap()
+          ..remove('features')
+          ..remove('timestamp')
+          ..remove('entities')
+          ..remove('type')
+          ..putIfAbsent('nick', () => user?.nick)
+          ..removeWhere((_, v) => v == null))
+        .toString();
+    return '${msgTypeValues.reverse[type]} $output';
+  }
 }
 
 final msgTypeValues = EnumValues({
@@ -75,7 +84,7 @@ class Entities {
     required this.emotes,
     required this.codes,
     required this.spoilers,
-    // required this.greentext,
+    // required this.greentext
   });
 
   factory Entities.fromJson(String str) => Entities.fromMap(json.decode(str));
@@ -152,5 +161,60 @@ class EmoteInMessage {
         'name': name,
         'bounds': List<dynamic>.from(bounds.map((x) => x)),
         'modifiers': List<dynamic>.from(modifiers.map((x) => x)),
+      };
+}
+
+class Chatters {
+  Chatters({
+    required this.users,
+    required this.connectioncount,
+  });
+
+  factory Chatters.fromJson(String str) => Chatters.fromMap(json.decode(str));
+
+  factory Chatters.fromMap(Map<String, dynamic> json) => Chatters(
+        users:
+            List<User>.from(json['users'].map((dynamic x) => User.fromMap(x))),
+        connectioncount: json['connectioncount'],
+      );
+
+  factory Chatters.fromWire(String msg) {
+    final raw = _parseMsgType(msg);
+    print('raw: $msg');
+    return Chatters.fromJson(raw.item2);
+  }
+
+  final List<User> users;
+  final int connectioncount;
+
+  String toJson() => json.encode(toMap());
+
+  Map<String, dynamic> toMap() => {
+        'users': List<dynamic>.from(users.map((x) => x.toMap())),
+        'connectioncount': connectioncount,
+      };
+}
+
+class User {
+  User({
+    required this.nick,
+    required this.features,
+  });
+
+  factory User.fromJson(String str) => User.fromMap(json.decode(str));
+
+  factory User.fromMap(Map<String, dynamic> json) => User(
+        nick: json['nick'],
+        features: List<String>.from(json['features'].map((dynamic x) => x)),
+      );
+
+  final String nick;
+  final List<String> features;
+
+  String toJson() => json.encode(toMap());
+
+  Map<String, dynamic> toMap() => {
+        'nick': nick,
+        'features': List<dynamic>.from(features.map((x) => x)),
       };
 }

@@ -18,6 +18,7 @@ class WSClient {
   late WebSocketChannel _channel;
   late void Function(Message msg) onMsgFunc;
   late void Function(Message msg) onPrivMsgFunc;
+  late void Function(Chatters msg) onNamesMsgFunc;
   final headers = <String, String>{'user-agent': 'mobile.chat.strims.gg'};
 
   bool get isAuthenticated => token.isNotEmpty && user != 'Anonymous';
@@ -25,6 +26,7 @@ class WSClient {
   void logout() {
     token = '';
     user = 'Anonymous';
+    reset();
   }
 
   void reset() {
@@ -32,8 +34,8 @@ class WSClient {
     dial();
   }
 
-  void send(String msg) {
-    if (isAuthenticated) _channel.sink.add(msg);
+  void send(Message msg) {
+    if (isAuthenticated) _channel.sink.add(msg.toWireString());
   }
 
   void listen() {
@@ -42,6 +44,8 @@ class WSClient {
         final type = msgTypeValues.map[data.split(' ')[0].trim()];
         switch (type) {
           case MsgType.NAMES:
+            final msg = Chatters.fromWire(data);
+            onNamesMsgFunc(msg);
             break;
           case MsgType.MSG:
             final msg = Message.fromWire(data);
