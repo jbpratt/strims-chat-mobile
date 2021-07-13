@@ -1,42 +1,46 @@
-import 'package:flutter_inappbrowser/flutter_inappbrowser.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 class Browser extends InAppBrowser {
+  CookieManager cm = CookieManager();
+
   @override
-  void onBrowserCreated() async {
-    print("\n\nBrowser Ready!\n\n");
+  void onBrowserCreated() {
+    print('\n\nBrowser Ready!\n\n');
   }
 
   @override
-  onLoadStart(String url) async {}
+  void onLoadStart(Uri? url) {}
 
   @override
-  Future onLoadStop(String url) async {
-    print("\nloading stopped\n");
+  void onLoadStop(Uri? url) {
+    print('\nloading stopped\n');
   }
 
-  Future<Map<String, dynamic>> getCookie(String name) async {
-    return await CookieManager.getCookie("https://chat.strims.gg", name);
+  Future<Cookie?> getCookie(String name) async {
+    return cm.getCookie(url: Uri.parse('https://chat.strims.gg'), name: name);
   }
 
   @override
-  void onLoadError(String url, int code, String message) {
+  void onLoadError(Uri? url, int code, String message) {
     print("\n\nCan't load $url.. Error: $message\n\n");
   }
 
   @override
-  void onExit() async {
-    print("\n\nBrowser closed!\n\n");
+  void onExit() {
+    print('\n\nBrowser closed!\n\n');
   }
 
+//  @override
+//  void shouldOverrideUrlLoading(String url) {
+//    webViewController.loadUrl(url: url);
+//  }
+
+//  @override
+//  void onLoadResource(
+//      WebResourceResponse response, WebResourceRequest request) {}
+
   @override
-  void shouldOverrideUrlLoading(String url) {
-    this.webViewController.loadUrl(url);
+  void onConsoleMessage(ConsoleMessage consoleMessage) {
+    print(consoleMessage.message);
   }
-
-  @override
-  void onLoadResource(
-      WebResourceResponse response, WebResourceRequest request) {}
-
-  @override
-  void onConsoleMessage(ConsoleMessage consoleMessage) {}
 }
