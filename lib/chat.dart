@@ -223,108 +223,12 @@ class _ChatPageState extends State<ChatPage> {
     settingsNotifier = Provider.of<SettingsNotifier>(context);
     settings = Provider.of<SettingsNotifier>(context).settings;
 
-//    final Color headerColor = Utilities.flipColor(settings.bgColor, 100);
-
     return Scaffold(
-        // TODO: floating combo button disabled
-//        floatingActionButton: _isComboButtonShown()
-//            ? FloatingActionButton(
-//                onPressed: _sendComboEmote,
-//                backgroundColor: Colors.transparent,
-//                child: ConstrainedBox(
-//                  constraints: const BoxConstraints.expand(),
-//                  child: emote.images[Size
-//                      .THE_2_X], // TODO : remove when emote modifiers are added
-//                ))
-//            : Container(),
-//        appBar: AppBar(
-//          iconTheme: IconThemeData(
-//            color: Utilities.flipColor(headerColor, 100),
-//          ),
-//          backgroundColor: headerColor,
-//          title: Row(
-//            mainAxisAlignment: MainAxisAlignment.center,
-//            children: [
-//              Image.asset(
-//                kLogoPath,
-//                fit: BoxFit.contain,
-//                height: 24,
-//              ),
-//              Container(
-//                  padding: const EdgeInsets.all(8),
-//                  child: const Text(kAppTitle))
-//            ],
-//          ),
-//          elevation: 0,
-//          actions: <Widget>[
-//            IconButton(
-//              icon: Icon(
-//                Icons.person,
-//                color: Utilities.flipColor(headerColor, 100),
-//              ),
-//              onPressed: login,
-//            ),
-//          ],
-//        ),
-//        drawer: Drawer(
-//          child: ListView(
-//            children: <Widget>[
-//              ListTile(
-//                title: const Text('Settings'),
-//                trailing: Icon(
-//                  Icons.settings,
-//                  color: Utilities.flipColor(headerColor, 100),
-//                ),
-//                onTap: () {
-//                  Navigator.of(context).pop();
-//                  Navigator.push(
-//                      context,
-//                      MaterialPageRoute<SettingsRoute>(
-//                        builder: (context) => SettingsRoute(
-//                            settings), // TODO: fix settings widget position in tree
-//                      ));
-//                },
-//              ),
-//              ListTile(
-//                title: const Text('User list'),
-//                trailing: const Icon(Icons.people),
-//                onTap: () {
-//                  Navigator.of(context).pop();
-//                  Navigator.push(
-//                      context,
-//                      MaterialPageRoute<SettingsRoute>(
-//                        builder: (context) => ChatterListRoute(chatters),
-//                      ));
-//                },
-//              ),
-//              ListTile(
-//                title: const Text('PMs'),
-//                trailing: const Icon(Icons.mail),
-//                onTap: () {
-//                  Navigator.of(context).pop();
-//                  Navigator.push(
-//                      context,
-//                      MaterialPageRoute<WhispersRoute>(
-//                        builder: (context) => const WhispersRoute(),
-//                      ));
-//                },
-//              ),
-//              ElevatedButton(
-//                onPressed: () {
-//                  setState(() {
-//                    ws.logout();
-//                    label = determineLabel();
-//                  });
-//                  storage..deleteSetting('jwt')..deleteSetting('nick');
-//                  Navigator.of(context).pop();
-//                },
-//                child: const Text('Logout'),
-//              )
-//            ],
-//          ),
-//        ),
-        backgroundColor: settings.bgColor,
+        backgroundColor: settings.cardColor,
         body: Column(children: <Widget>[
+          Expanded(
+            child: ListView(children: <Widget>[MessageList(messages, ws.user)]),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(
               vertical: 5,
@@ -351,40 +255,6 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ]),
           ),
-          Expanded(
-            child: ListView(children: <Widget>[MessageList(messages, ws.user)]),
-          ),
-//          Container(
-//            height: 50,
-//            child: ListView.builder(
-//              scrollDirection: Axis.horizontal,
-//              itemCount: autoCompleteSuggestions.length,
-//              controller: autoCompleteScrollController,
-//              itemBuilder: (BuildContext ctx, int index) {
-////                final e = manifest.emote(autoCompleteSuggestions[index]);
-//                return TextButton(
-//                    onPressed: () =>
-//                        {_insertAutocomplete(autoCompleteSuggestions[index])},
-//                    child: // e != null
-//                        //? e.images[Size.THE_2_X]!
-//                        //:
-//                        Text(autoCompleteSuggestions[index]));
-//              },
-//            ),
-//          )
         ]));
-  }
-}
-
-class WhispersRoute extends StatelessWidget {
-  const WhispersRoute({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: const Text('Whispers'),
-        ),
-        body: Column());
   }
 }

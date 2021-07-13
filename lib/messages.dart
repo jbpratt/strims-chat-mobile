@@ -33,14 +33,14 @@ class _MessageListState extends State<MessageList> {
 //    messages.retainWhere((message) =>
 //        message.shouldShow(_settings));
     return Container(
-        color: _settings.bgColor,
+        color: _settings.cardColor,
         child: ListView.builder(
           shrinkWrap: true,
           reverse: true,
           controller: _controller,
-          itemCount: widget._messages.length,
+          itemCount: messages.length,
           itemBuilder: (BuildContext ctx, int index) {
-            final Message msg = widget._messages[index];
+            final Message msg = messages[index];
             return Card(
                 color: _settings.cardColor,
                 // TODO: do this properly
@@ -85,7 +85,6 @@ class _MessageListItem extends ListTile {
 
     return ListTile(
         tileColor: tileColor,
-        dense: true,
         title: Padding(
             padding: const EdgeInsets.only(
               top: 8,
@@ -122,54 +121,4 @@ class _MessageListItem extends ListTile {
             ]))),
         onTap: () {});
   }
-
-//  static Future<void> _launchURL(String url) async {
-//    if (await canLaunch(url)) {
-//      await launch(url);
-//    } else {
-//      throw 'Could not launch $url';
-//    }
-//  }
-//
-//  // TODO: comboActive is never getting set to true
-//  static List<InlineSpan> comboWidget(int comboAmount,
-//      {bool comboActive = false}) {
-//    final output = <InlineSpan>[];
-//    if (!comboActive) {
-//      return output;
-//    }
-//
-//    double fontSize = 15;
-//    FontWeight fontWeight = FontWeight.normal;
-//    //TODO: change these sizes
-//    if (comboAmount >= 50) {
-//      fontWeight = FontWeight.w900;
-//      fontSize *= 5;
-//    } else if (comboAmount >= 30) {
-//      fontWeight = FontWeight.w700;
-//      fontSize *= 4;
-//    } else if (comboAmount >= 20) {
-//      fontWeight = FontWeight.w700;
-//      fontSize *= 3;
-//    } else if (comboAmount >= 10) {
-//      fontWeight = FontWeight.w700;
-//      fontSize *= 2;
-//    } else if (comboAmount >= 5) {
-//      fontSize *= 1.5;
-//    }
-//    // HACKER 7 X C-C-C-COMBO
-//    // combo amount
-//    output
-//      ..add(TextSpan(
-//          text: ' ${comboAmount.toString()}',
-//          style: TextStyle(fontSize: fontSize, fontWeight: fontWeight)))
-//      ..add(TextSpan(
-//          text: ' X ',
-//          style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight)))
-//      ..add(TextSpan(
-//          text: comboActive ? 'HITS' : 'C-C-C-COMBO',
-//          style: TextStyle(fontSize: fontSize * .7, fontWeight: fontWeight)));
-//    return output;
-//    //(comboActive ? "Hits" : "C-C-C-COMBO")
-//  }
 }
