@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 // import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide Storage;
 
 import 'browser.dart';
-import 'chatter.dart';
+// import 'chatter.dart';
 //import 'constants.dart';
 import 'emote_manifest.dart';
 import 'messages.dart';
@@ -124,7 +124,7 @@ class _ChatPageState extends State<ChatPage> {
         context: context,
         builder: (BuildContext context) {
           if (ws.user != 'Anonymous' && ws.token.isNotEmpty) {
-            // TODO: remove the popup somehow
+            // Navigator.pop(context);
           }
           return AlertDialog(
             title: const Text('Whoops!'),
@@ -155,14 +155,11 @@ class _ChatPageState extends State<ChatPage> {
 
     if (controller.text.isNotEmpty) {
       final String text = controller.text;
-      // if first two chars are '/w' or '/msg' or '/message' or '/tell' or
-      // '/notify' or '/t'  or '/whisper' // <- all pms if user is auth as
+      // user: '/w', '/msg', '/message', '/tell', '/notify', '/t', '/whisper'
       // moderator: '/ban' or '/mute'
-
-      if (text[0] == '/') {
+      if (text.startsWith('/')) {
         // TODO: trim left for function check ?
         // TODO: lowercase functions ?
-
         // TODO: handle all "/" functions
         if (text.contains(RegExp(
             r'^\/((highlight)|(unhighlight)|(tag)|(untag)|(ignore)|(unignore)|(hide)|(unhide))'))) {
@@ -203,8 +200,6 @@ class _ChatPageState extends State<ChatPage> {
     controller.text = '';
   }
 
-  void sendDataKeyboard(String data) => sendData();
-
   void onMsg(Message msg) => addMessage(msg);
 
   void onPrivMsg(Message msg) => addMessage(msg);
@@ -218,13 +213,9 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
-  String determineLabel() {
-    if (!ws.isAuthenticated) {
-      return 'You need to be signed in to chat';
-    } else {
-      return 'Write something ${ws.user}...';
-    }
-  }
+  String determineLabel() => !ws.isAuthenticated
+      ? 'You need to be signed in to chat'
+      : 'Write something ${ws.user}...';
 
   @override
   Widget build(BuildContext context) {
@@ -232,7 +223,7 @@ class _ChatPageState extends State<ChatPage> {
     settingsNotifier = Provider.of<SettingsNotifier>(context);
     settings = Provider.of<SettingsNotifier>(context).settings;
 
-    final Color headerColor = Utilities.flipColor(settings.bgColor, 100);
+//    final Color headerColor = Utilities.flipColor(settings.bgColor, 100);
 
     return Scaffold(
         // TODO: floating combo button disabled
@@ -246,92 +237,92 @@ class _ChatPageState extends State<ChatPage> {
 //                      .THE_2_X], // TODO : remove when emote modifiers are added
 //                ))
 //            : Container(),
-        appBar: AppBar(
-          iconTheme: IconThemeData(
-            color: Utilities.flipColor(headerColor, 100),
-          ),
-          backgroundColor: headerColor,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                kLogoPath,
-                fit: BoxFit.contain,
-                height: 24,
-              ),
-              Container(
-                  padding: const EdgeInsets.all(8),
-                  child: const Text(kAppTitle))
-            ],
-          ),
-          elevation: 0,
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(
-                Icons.person,
-                color: Utilities.flipColor(headerColor, 100),
-              ),
-              onPressed: login,
-            ),
-          ],
-        ),
-        drawer: Drawer(
-          child: ListView(
-            children: <Widget>[
-              ListTile(
-                title: const Text('Settings'),
-                trailing: Icon(
-                  Icons.settings,
-                  color: Utilities.flipColor(headerColor, 100),
-                ),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute<SettingsRoute>(
-                        builder: (context) => SettingsRoute(
-                            settings), // TODO: fix settings widget position in tree
-                      ));
-                },
-              ),
-              ListTile(
-                title: const Text('User list'),
-                trailing: const Icon(Icons.people),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute<SettingsRoute>(
-                        builder: (context) => ChatterListRoute(chatters),
-                      ));
-                },
-              ),
-              ListTile(
-                title: const Text('PMs'),
-                trailing: const Icon(Icons.mail),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute<WhispersRoute>(
-                        builder: (context) => const WhispersRoute(),
-                      ));
-                },
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    ws.logout();
-                    label = determineLabel();
-                  });
-                  storage..deleteSetting('jwt')..deleteSetting('nick');
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Logout'),
-              )
-            ],
-          ),
-        ),
+//        appBar: AppBar(
+//          iconTheme: IconThemeData(
+//            color: Utilities.flipColor(headerColor, 100),
+//          ),
+//          backgroundColor: headerColor,
+//          title: Row(
+//            mainAxisAlignment: MainAxisAlignment.center,
+//            children: [
+//              Image.asset(
+//                kLogoPath,
+//                fit: BoxFit.contain,
+//                height: 24,
+//              ),
+//              Container(
+//                  padding: const EdgeInsets.all(8),
+//                  child: const Text(kAppTitle))
+//            ],
+//          ),
+//          elevation: 0,
+//          actions: <Widget>[
+//            IconButton(
+//              icon: Icon(
+//                Icons.person,
+//                color: Utilities.flipColor(headerColor, 100),
+//              ),
+//              onPressed: login,
+//            ),
+//          ],
+//        ),
+//        drawer: Drawer(
+//          child: ListView(
+//            children: <Widget>[
+//              ListTile(
+//                title: const Text('Settings'),
+//                trailing: Icon(
+//                  Icons.settings,
+//                  color: Utilities.flipColor(headerColor, 100),
+//                ),
+//                onTap: () {
+//                  Navigator.of(context).pop();
+//                  Navigator.push(
+//                      context,
+//                      MaterialPageRoute<SettingsRoute>(
+//                        builder: (context) => SettingsRoute(
+//                            settings), // TODO: fix settings widget position in tree
+//                      ));
+//                },
+//              ),
+//              ListTile(
+//                title: const Text('User list'),
+//                trailing: const Icon(Icons.people),
+//                onTap: () {
+//                  Navigator.of(context).pop();
+//                  Navigator.push(
+//                      context,
+//                      MaterialPageRoute<SettingsRoute>(
+//                        builder: (context) => ChatterListRoute(chatters),
+//                      ));
+//                },
+//              ),
+//              ListTile(
+//                title: const Text('PMs'),
+//                trailing: const Icon(Icons.mail),
+//                onTap: () {
+//                  Navigator.of(context).pop();
+//                  Navigator.push(
+//                      context,
+//                      MaterialPageRoute<WhispersRoute>(
+//                        builder: (context) => const WhispersRoute(),
+//                      ));
+//                },
+//              ),
+//              ElevatedButton(
+//                onPressed: () {
+//                  setState(() {
+//                    ws.logout();
+//                    label = determineLabel();
+//                  });
+//                  storage..deleteSetting('jwt')..deleteSetting('nick');
+//                  Navigator.of(context).pop();
+//                },
+//                child: const Text('Logout'),
+//              )
+//            ],
+//          ),
+//        ),
         backgroundColor: settings.bgColor,
         body: Column(children: <Widget>[
           Container(
@@ -348,7 +339,7 @@ class _ChatPageState extends State<ChatPage> {
                     filled: true,
                   ),
                   controller: controller,
-                  onFieldSubmitted: sendDataKeyboard,
+                  onFieldSubmitted: (String _) => sendData(),
                 ),
               )),
               ButtonTheme(

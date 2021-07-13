@@ -11,33 +11,6 @@ class EnumValues<T> {
   }
 }
 
-Color colorFromName(String name) {
-  switch (name) {
-    case 'green':
-      return Colors.green;
-    case 'yellow':
-      return Colors.yellow;
-    case 'orange':
-      return Colors.orange;
-    case 'red':
-      return Colors.red;
-    case 'purple':
-      return Colors.purple;
-    case 'blue':
-      return Colors.blue;
-    case 'sky':
-      return Colors.cyan;
-    case 'lime':
-      return Colors.lime;
-    case 'pink':
-      return Colors.pink;
-    case 'black':
-      return Colors.grey;
-    default:
-      return Colors.transparent;
-  }
-}
-
 class TextEditingControllerWorkaroud extends TextEditingController {
   TextEditingControllerWorkaroud({String text = ''}) : super(text: text);
 
@@ -51,6 +24,23 @@ class TextEditingControllerWorkaroud extends TextEditingController {
 }
 
 class Utilities {
+  static String humanizeTimestamp(int? timestamp) {
+    if (timestamp != null) {
+      final DateTime d =
+          DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true).toLocal();
+      String hour = d.hour.toString();
+      String minute = d.minute.toString();
+      if (hour.length == 1) {
+        hour = '0$hour';
+      }
+      if (minute.length == 1) {
+        minute = '0$minute';
+      }
+      return '$hour:$minute';
+    }
+    return '';
+  }
+
   static Color flipColor(Color color, int offset) {
     final int r = color.red;
     final int g = color.green;
@@ -87,5 +77,32 @@ class Utilities {
     final int newG = max(g + offset, 0);
     final int newB = max(b + offset, 0);
     return Color.fromARGB(255, newR, newG, newB);
+  }
+
+  static Color colorFromName(String name) {
+    switch (name) {
+      case 'green':
+        return Colors.green;
+      case 'yellow':
+        return Colors.yellow;
+      case 'orange':
+        return Colors.orange;
+      case 'red':
+        return Colors.red;
+      case 'purple':
+        return Colors.purple;
+      case 'blue':
+        return Colors.blue;
+      case 'sky':
+        return Colors.cyan;
+      case 'lime':
+        return Colors.lime;
+      case 'pink':
+        return Colors.pink;
+      case 'black':
+        return Colors.grey;
+      default:
+        return Colors.transparent;
+    }
   }
 }

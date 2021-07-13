@@ -76,7 +76,7 @@ class _MessageListItem extends ListTile {
   Widget build(BuildContext context) {
     Color tileColor = _settings.cardColor;
     if (_msg.user!.nick == 'info') {
-      tileColor = colorFromName('sky');
+      tileColor = Utilities.colorFromName('sky');
     }
 
     if (_msg.user!.nick == _userNickname) {
@@ -98,21 +98,28 @@ class _MessageListItem extends ListTile {
             padding: const EdgeInsets.only(
               bottom: 8,
             ),
-            child: Text.rich(TextSpan(
-                text: _msg.type == MsgType.PRIVMSG
-                    ? '${_msg.user!.nick} whispered'
-                    : _msg.user!.nick,
-                style: TextStyle(
-                  backgroundColor: _msg.type == MsgType.PRIVMSG
-                      ? Utilities.flipColor(_settings.cardColor, 50)
-                      : null,
-                  fontStyle:
-                      _msg.type == MsgType.PRIVMSG ? FontStyle.italic : null,
-                  color: _msg.type == MsgType.PRIVMSG
-                      ? Utilities.flipColor(
-                          Utilities.flipColor(_settings.cardColor, 50), 100)
-                      : Utilities.flipColor(_settings.cardColor, 100),
-                )))),
+            child: Text.rich(TextSpan(children: <InlineSpan>[
+              // TODO: if timestamp enabled/disabled
+              TextSpan(
+                  text: '${Utilities.humanizeTimestamp(_msg.timestamp)} ',
+                  style: TextStyle(
+                      color: Utilities.flipColor(_settings.cardColor, 100))),
+              TextSpan(
+                  text: _msg.type == MsgType.PRIVMSG
+                      ? '${_msg.user!.nick} whispered'
+                      : _msg.user!.nick,
+                  style: TextStyle(
+                    backgroundColor: _msg.type == MsgType.PRIVMSG
+                        ? Utilities.flipColor(_settings.cardColor, 50)
+                        : null,
+                    fontStyle:
+                        _msg.type == MsgType.PRIVMSG ? FontStyle.italic : null,
+                    color: _msg.type == MsgType.PRIVMSG
+                        ? Utilities.flipColor(
+                            Utilities.flipColor(_settings.cardColor, 50), 100)
+                        : Utilities.flipColor(_settings.cardColor, 100),
+                  ))
+            ]))),
         onTap: () {});
   }
 
